@@ -95,7 +95,10 @@ async fn insertIntoUrl(category: &String, agency_info: &AgencyInfo) -> Result<()
             bytes.len()
         );
 
-        let _: () = con.set(format!("{}|{}", agency_info.onetrip, category), bytes)?;
+        let _: () = con.set(
+            format!("gtfsrt|{}|{}", agency_info.onetrip, category),
+            bytes,
+        )?;
 
         Ok(())
     } else {
@@ -139,7 +142,7 @@ async fn main() {
         //if the agency timeout has not expired, skip it
         'eachagencyloop: for agency_info in &agency_infos {
             let last_updated_time =
-                con.get::<String, u64>(format!("{}|last_updated", agency_info.onetrip));
+                con.get::<String, u64>(format!("metagtfsrt|{}|last_updated", agency_info.onetrip));
 
             match last_updated_time {
                 Ok(last_updated_time) => {
@@ -176,7 +179,7 @@ async fn main() {
             //set the last updated time for this agency
             let _ = con
                 .set::<String, u64, ()>(
-                    format!("{}|last_updated", agency_info.onetrip),
+                    format!("metagtfsrt|{}|last_updated", agency_info.onetrip),
                     SystemTime::now()
                         .duration_since(UNIX_EPOCH)
                         .expect("System time not working!")
