@@ -76,8 +76,6 @@ async fn main() {
         agency_infos.push(agency_info);
     }
 
-    let reqwest_client = ReqwestClient::new();
-
     loop {
         lastloop = Instant::now();
 
