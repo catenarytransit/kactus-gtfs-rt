@@ -83,71 +83,100 @@ async fn main() {
         let redisclient = redis::Client::open("redis://127.0.0.1:6379/").unwrap();
         let mut con = redisclient.get_connection().unwrap();
 
-        for agency_info in &agency_infos {
-            let start_gtfs_pull = Instant::now();
-            let resp_vehicles = make_reqwest_to_agency(
-                &agency_info.realtime_vehicle_positions,
-                agency_info.has_auth,
-                &agency_info.auth_type,
-                &agency_info.auth_header,
-                &agency_info.auth_password,
-            )
-            .send()
-            .await;
-            let duration_gtfs_pull = start_gtfs_pull.elapsed();
+        'eachagencyloop: for agency_info in &agency_infos {
+            let last_updated_time =
+                con.get::<String, u64>(format!("{}|last_updated", agency_info.onetrip));
 
-            println!("pull gtfs time is: {:?}", duration_gtfs_pull);
-            let bytes: Vec<u8> = resp_vehicles.unwrap().bytes().await.unwrap().to_vec();
+            match last_updated_time {
+                Ok(last_updated_time) => {
+                    let time_since_last_run = (SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .expect("System time not working!")
+                        .as_millis() as u64)
+                        - last_updated_time;
 
-            println!("{} bytes: {}", agency_info.onetrip, bytes.len());
+                    if time_since_last_run < (agency_info.fetch_interval * 1000.0) as u64 {
+                        println!(
+                            "skipping {} because it was last updated {} seconds ago",
+                            agency_info.onetrip,
+                            time_since_last_run / 1000
+                        );
+                        continue;
+                    }
+                }
+                Err(_) => {}
+            }
 
-            let _ = con
-                .set::<String, Vec<u8>, ()>(format!("{}|vehicles", agency_info.onetrip), bytes)
-                .unwrap();
+            if agency_info.realtime_vehicle_positions.is_empty() == false {
+                let start_gtfs_pull = Instant::now();
+                let resp_vehicles = make_reqwest_to_agency(
+                    &agency_info.realtime_vehicle_positions,
+                    agency_info.has_auth,
+                    &agency_info.auth_type,
+                    &agency_info.auth_header,
+                    &agency_info.auth_password,
+                )
+                .send()
+                .await;
+                let duration_gtfs_pull = start_gtfs_pull.elapsed();
 
-            let resp_trip_updates = make_reqwest_to_agency(
-                &agency_info.realtime_trip_updates,
-                agency_info.has_auth,
-                &agency_info.auth_type,
-                &agency_info.auth_header,
-                &agency_info.auth_password,
-            )
-            .send()
-            .await;
+                println!("pull gtfs time is: {:?}", duration_gtfs_pull);
+                let bytes: Vec<u8> = resp_vehicles.unwrap().bytes().await.unwrap().to_vec();
 
-            let bytes_trip_updates: Vec<u8> =
-                resp_trip_updates.unwrap().bytes().await.unwrap().to_vec();
+                println!("{} bytes: {}", agency_info.onetrip, bytes.len());
 
-            let _ = con.set::<String, Vec<u8>, ()>(
-                format!("{}|trip_updates", agency_info.onetrip),
-                bytes_trip_updates,
-            );
+                let _ = con
+                    .set::<String, Vec<u8>, ()>(format!("{}|vehicles", agency_info.onetrip), bytes)
+                    .unwrap();
+            }
 
-            let resp_alerts = make_reqwest_to_agency(
-                &agency_info.realtime_alerts,
-                agency_info.has_auth,
-                &agency_info.auth_type,
-                &agency_info.auth_header,
-                &agency_info.auth_password,
-            )
-            .send()
-            .await;
+            if agency_info.realtime_trip_updates.is_empty() == false {
+                let resp_trip_updates = make_reqwest_to_agency(
+                    &agency_info.realtime_trip_updates,
+                    agency_info.has_auth,
+                    &agency_info.auth_type,
+                    &agency_info.auth_header,
+                    &agency_info.auth_password,
+                )
+                .send()
+                .await;
 
-            let bytes_alerts: Vec<u8> = resp_alerts.unwrap().bytes().await.unwrap().to_vec();
+                let bytes_trip_updates: Vec<u8> =
+                    resp_trip_updates.unwrap().bytes().await.unwrap().to_vec();
 
-            let _ = con.set::<String, Vec<u8>, ()>(
-                format!("{}|alerts", agency_info.onetrip),
-                bytes_alerts,
-            );
+                let _ = con.set::<String, Vec<u8>, ()>(
+                    format!("{}|trip_updates", agency_info.onetrip),
+                    bytes_trip_updates,
+                );
+            }
+
+            if agency_info.realtime_alerts.is_empty() == false {
+                let resp_alerts = make_reqwest_to_agency(
+                    &agency_info.realtime_alerts,
+                    agency_info.has_auth,
+                    &agency_info.auth_type,
+                    &agency_info.auth_header,
+                    &agency_info.auth_password,
+                )
+                .send()
+                .await;
+
+                let bytes_alerts: Vec<u8> = resp_alerts.unwrap().bytes().await.unwrap().to_vec();
+
+                let _ = con.set::<String, Vec<u8>, ()>(
+                    format!("{}|alerts", agency_info.onetrip),
+                    bytes_alerts,
+                );
+            }
 
             //set the last updated time for this agency
             let _ = con
-                .set::<String, i64, ()>(
+                .set::<String, u64, ()>(
                     format!("{}|last_updated", agency_info.onetrip),
                     SystemTime::now()
                         .duration_since(UNIX_EPOCH)
                         .expect("System time not working!")
-                        .as_millis() as i64,
+                        .as_millis() as u64,
                 )
                 .unwrap();
         }
@@ -162,34 +191,34 @@ async fn main() {
             std::thread::sleep(sleep_duration);
         }
     }
-
-    /*
-    loop {
-        let start = Instant::now();
-        let redisclient = redis::Client::open("redis://127.0.0.1:6379/").unwrap();
-        let mut con = redisclient.get_connection().unwrap();
-
-        let duration = start.elapsed();
-
-        println!("connect to redis time is: {:?}", duration);
-
-        let _: () = con.set("my_key", 42).unwrap();
-
-        let reqwest_client = ReqwestClient::new();
-        let start_gtfs_pull = Instant::now();
-        let resp = reqwest_client.get(url).send().await;
-        let duration_gtfs_pull = start_gtfs_pull.elapsed();
-
-        println!("pull gtfs time is: {:?}", duration_gtfs_pull);
-        let bytes: Vec<u8> = resp.unwrap().bytes().await.unwrap().to_vec();
-
-        println!("bytes: {}", bytes.len());
-
-        con.set::<String, Vec<u8>, ()>("octa-vehicle".to_string(), bytes)
-            .unwrap();
-
-        println!("set octa-vehicle in the redis db");
-
-        std::thread::sleep(std::time::Duration::from_millis(200));
-    }*/
 }
+
+/*
+loop {
+    let start = Instant::now();
+    let redisclient = redis::Client::open("redis://127.0.0.1:6379/").unwrap();
+    let mut con = redisclient.get_connection().unwrap();
+
+    let duration = start.elapsed();
+
+    println!("connect to redis time is: {:?}", duration);
+
+    let _: () = con.set("my_key", 42).unwrap();
+
+    let reqwest_client = ReqwestClient::new();
+    let start_gtfs_pull = Instant::now();
+    let resp = reqwest_client.get(url).send().await;
+    let duration_gtfs_pull = start_gtfs_pull.elapsed();
+
+    println!("pull gtfs time is: {:?}", duration_gtfs_pull);
+    let bytes: Vec<u8> = resp.unwrap().bytes().await.unwrap().to_vec();
+
+    println!("bytes: {}", bytes.len());
+
+    con.set::<String, Vec<u8>, ()>("octa-vehicle".to_string(), bytes)
+        .unwrap();
+
+    println!("set octa-vehicle in the redis db");
+
+    std::thread::sleep(std::time::Duration::from_millis(200));
+}*/
