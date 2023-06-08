@@ -12,7 +12,7 @@ use std::fs::File;
 use std::io::BufReader;
 
 //stores the config for each agency
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct AgencyInfo {
     onetrip: String,
     realtime_vehicle_positions: String,
@@ -47,6 +47,60 @@ fn make_reqwest_to_agency(
     }
 
     requesttoreturn
+}
+
+async fn insertIntoUrl(category: &String, agency_info: &AgencyInfo) -> Result<(), Box<dyn Error>> {
+    let redisclient = redis::Client::open("redis://127.0.0.1:6379/").unwrap();
+    let mut con = redisclient.get_connection().unwrap();
+
+    let start_gtfs_pull = Instant::now();
+
+    let mut url: String;
+
+    if (category == "vehicles") {
+        url = agency_info.realtime_vehicle_positions.clone();
+    } else if (category == "trip_updates") {
+        url = agency_info.realtime_trip_updates.clone();
+    } else if (category == "alerts") {
+        url = agency_info.realtime_alerts.clone();
+    } else {
+        return Err("Invalid category".into());
+    }
+
+    let resp = make_reqwest_to_agency(
+        &url,
+        agency_info.has_auth,
+        &agency_info.auth_type,
+        &agency_info.auth_header,
+        &agency_info.auth_password,
+    )
+    .send()
+    .await
+    .unwrap();
+
+    if (reqwest::Response::status(&resp) == reqwest::StatusCode::OK) {
+        let duration_gtfs_pull = start_gtfs_pull.elapsed();
+
+        println!(
+            "pull {} {} gtfs time is: {:?}",
+            &agency_info.onetrip, category, duration_gtfs_pull
+        );
+
+        let bytes: Vec<u8> = resp.bytes().await.unwrap().to_vec();
+
+        println!(
+            "{} {} bytes: {}",
+            agency_info.onetrip,
+            category,
+            bytes.len()
+        );
+
+        let _: () = con.set(format!("{}|{}", agency_info.onetrip, category), bytes)?;
+
+        Ok(())
+    } else {
+        Err("Not 200 response".into())
+    }
 }
 
 #[tokio::main]
@@ -101,72 +155,22 @@ async fn main() {
                             agency_info.onetrip,
                             time_since_last_run / 1000
                         );
-                        continue;
+                        continue 'eachagencyloop;
                     }
                 }
                 Err(_) => {}
             }
 
             if agency_info.realtime_vehicle_positions.is_empty() == false {
-                let start_gtfs_pull = Instant::now();
-                let resp_vehicles = make_reqwest_to_agency(
-                    &agency_info.realtime_vehicle_positions,
-                    agency_info.has_auth,
-                    &agency_info.auth_type,
-                    &agency_info.auth_header,
-                    &agency_info.auth_password,
-                )
-                .send()
-                .await;
-                let duration_gtfs_pull = start_gtfs_pull.elapsed();
-
-                println!("pull gtfs time is: {:?}", duration_gtfs_pull);
-                let bytes: Vec<u8> = resp_vehicles.unwrap().bytes().await.unwrap().to_vec();
-
-                println!("{} bytes: {}", agency_info.onetrip, bytes.len());
-
-                let _ = con
-                    .set::<String, Vec<u8>, ()>(format!("{}|vehicles", agency_info.onetrip), bytes)
-                    .unwrap();
+                let _ = insertIntoUrl(&"vehicles".to_string(), &agency_info);
             }
 
             if agency_info.realtime_trip_updates.is_empty() == false {
-                let resp_trip_updates = make_reqwest_to_agency(
-                    &agency_info.realtime_trip_updates,
-                    agency_info.has_auth,
-                    &agency_info.auth_type,
-                    &agency_info.auth_header,
-                    &agency_info.auth_password,
-                )
-                .send()
-                .await;
-
-                let bytes_trip_updates: Vec<u8> =
-                    resp_trip_updates.unwrap().bytes().await.unwrap().to_vec();
-
-                let _ = con.set::<String, Vec<u8>, ()>(
-                    format!("{}|trip_updates", agency_info.onetrip),
-                    bytes_trip_updates,
-                );
+                let _ = insertIntoUrl(&"trip_updates".to_string(), &agency_info);
             }
 
             if agency_info.realtime_alerts.is_empty() == false {
-                let resp_alerts = make_reqwest_to_agency(
-                    &agency_info.realtime_alerts,
-                    agency_info.has_auth,
-                    &agency_info.auth_type,
-                    &agency_info.auth_header,
-                    &agency_info.auth_password,
-                )
-                .send()
-                .await;
-
-                let bytes_alerts: Vec<u8> = resp_alerts.unwrap().bytes().await.unwrap().to_vec();
-
-                let _ = con.set::<String, Vec<u8>, ()>(
-                    format!("{}|alerts", agency_info.onetrip),
-                    bytes_alerts,
-                );
+                let _ = insertIntoUrl(&"alerts".to_string(), &agency_info);
             }
 
             //set the last updated time for this agency
