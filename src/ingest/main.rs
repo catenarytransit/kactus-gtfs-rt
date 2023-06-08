@@ -101,10 +101,12 @@ async fn insertIntoUrl(category: &String, agency_info: &AgencyInfo) -> Result<()
             bytes.len()
         );
 
-        let _: () = con.set(
-            format!("gtfsrt|{}|{}", agency_info.onetrip, category),
-            bytes,
-        )?;
+        let _: () = con
+            .set(
+                format!("gtfsrt|{}|{}", agency_info.onetrip, category),
+                bytes,
+            )
+            .unwrap();
 
         Ok(())
     } else {
