@@ -192,33 +192,3 @@ async fn main() {
         }
     }
 }
-
-/*
-loop {
-    let start = Instant::now();
-    let redisclient = redis::Client::open("redis://127.0.0.1:6379/").unwrap();
-    let mut con = redisclient.get_connection().unwrap();
-
-    let duration = start.elapsed();
-
-    println!("connect to redis time is: {:?}", duration);
-
-    let _: () = con.set("my_key", 42).unwrap();
-
-    let reqwest_client = ReqwestClient::new();
-    let start_gtfs_pull = Instant::now();
-    let resp = reqwest_client.get(url).send().await;
-    let duration_gtfs_pull = start_gtfs_pull.elapsed();
-
-    println!("pull gtfs time is: {:?}", duration_gtfs_pull);
-    let bytes: Vec<u8> = resp.unwrap().bytes().await.unwrap().to_vec();
-
-    println!("bytes: {}", bytes.len());
-
-    con.set::<String, Vec<u8>, ()>("octa-vehicle".to_string(), bytes)
-        .unwrap();
-
-    println!("set octa-vehicle in the redis db");
-
-    std::thread::sleep(std::time::Duration::from_millis(200));
-}*/
