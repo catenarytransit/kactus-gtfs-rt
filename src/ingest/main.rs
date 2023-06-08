@@ -11,6 +11,7 @@ use std::error::Error;
 use std::fs::File;
 use std::io::BufReader;
 
+//stores the config for each agency
 #[derive(Debug)]
 struct AgencyInfo {
     onetrip: String,
@@ -83,6 +84,7 @@ async fn main() {
         let redisclient = redis::Client::open("redis://127.0.0.1:6379/").unwrap();
         let mut con = redisclient.get_connection().unwrap();
 
+        //if the agency timeout has not expired, skip it
         'eachagencyloop: for agency_info in &agency_infos {
             let last_updated_time =
                 con.get::<String, u64>(format!("{}|last_updated", agency_info.onetrip));
@@ -185,6 +187,7 @@ async fn main() {
 
         println!("loop time is: {:?}", duration);
 
+        //if the iteration of the loop took <1 second, sleep for the remainder of the second
         if (duration.as_millis() as i32) < 1000 {
             let sleep_duration = Duration::from_millis(1000) - duration;
             println!("sleeping for {:?}", sleep_duration);
