@@ -12,7 +12,7 @@ use std::fs::File;
 use std::io::BufReader;
 
 //stores the config for each agency
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 struct AgencyInfo {
     onetrip: String,
     realtime_vehicle_positions: String,
@@ -52,19 +52,23 @@ fn make_reqwest_to_agency(
 async fn insertIntoUrl(category: &String, agency_info: &AgencyInfo) -> Result<(), Box<dyn Error>> {
     let redisclient = redis::Client::open("redis://127.0.0.1:6379/").unwrap();
     let mut con = redisclient.get_connection().unwrap();
-
     let start_gtfs_pull = Instant::now();
+    let url: String;
 
-    let mut url: String;
-
-    if (category == "vehicles") {
-        url = agency_info.realtime_vehicle_positions.clone();
-    } else if (category == "trip_updates") {
-        url = agency_info.realtime_trip_updates.clone();
-    } else if (category == "alerts") {
-        url = agency_info.realtime_alerts.clone();
-    } else {
-        return Err("Invalid category".into());
+    match category.as_str() {
+        "vehicles" => {
+            url = agency_info.realtime_vehicle_positions.clone();
+        }
+        "trip_updates" => {
+            url = agency_info.realtime_trip_updates.clone();
+        }
+        "alerts" => {
+            url = agency_info.realtime_alerts.clone();
+        }
+        _ => {
+            println!("Invalid category");
+            return Err("Invalid category".into());
+        }
     }
 
     let resp = make_reqwest_to_agency(
@@ -77,6 +81,8 @@ async fn insertIntoUrl(category: &String, agency_info: &AgencyInfo) -> Result<()
     .send()
     .await
     .unwrap();
+
+    println!("got response {}", &agency_info.onetrip);
 
     if (reqwest::Response::status(&resp) == reqwest::StatusCode::OK) {
         let duration_gtfs_pull = start_gtfs_pull.elapsed();
@@ -102,6 +108,7 @@ async fn insertIntoUrl(category: &String, agency_info: &AgencyInfo) -> Result<()
 
         Ok(())
     } else {
+        println!("Not 200 response");
         Err("Not 200 response".into())
     }
 }
@@ -164,16 +171,21 @@ async fn main() {
                 Err(_) => {}
             }
 
+            println!("{} is being updated", agency_info.onetrip);
+
             if agency_info.realtime_vehicle_positions.is_empty() == false {
-                let _ = insertIntoUrl(&"vehicles".to_string(), &agency_info);
+                println!("{} has vehicles url", agency_info.onetrip);
+                let _ = insertIntoUrl(&("vehicles".to_string()), &agency_info).await;
+            } else {
+                println!("{} has no vehicles url", agency_info.onetrip);
             }
 
             if agency_info.realtime_trip_updates.is_empty() == false {
-                let _ = insertIntoUrl(&"trip_updates".to_string(), &agency_info);
+                let _ = insertIntoUrl(&("trip_updates".to_string()), &agency_info).await;
             }
 
             if agency_info.realtime_alerts.is_empty() == false {
-                let _ = insertIntoUrl(&"alerts".to_string(), &agency_info);
+                let _ = insertIntoUrl(&("alerts".to_string()), &agency_info).await;
             }
 
             //set the last updated time for this agency
