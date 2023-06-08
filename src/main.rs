@@ -2,7 +2,7 @@ use redis::Commands;
 use redis::RedisError;
 use redis::{Client as RedisClient, RedisResult};
 use reqwest::Client as ReqwestClient;
-use std::time::{Duration, Instant};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 extern crate csv;
 
@@ -20,14 +20,37 @@ struct AgencyInfo {
     has_auth: bool,
     auth_type: String,
     auth_header: String,
+    auth_password: String,
     fetch_interval: f32,
+}
+
+fn make_reqwest_to_agency(
+    url: &String,
+    has_auth: bool,
+    auth_type: &String,
+    auth_header: &String,
+    auth_password: &String,
+) -> reqwest::RequestBuilder {
+    let reqwest_client = ReqwestClient::new();
+
+    let urltouse = url.clone();
+
+    if auth_type == "url" {
+        let _ = urltouse.replace("PASSWORD", &auth_password);
+    }
+
+    let requesttoreturn = reqwest_client.get(urltouse);
+
+    if auth_type == "header" {
+        return requesttoreturn.header(auth_header, auth_password);
+    }
+
+    requesttoreturn
 }
 
 #[tokio::main]
 async fn main() {
     let mut lastloop = Instant::now();
-
-    let url = "https://api.octa.net/GTFSRealTime/protoBuf/VehiclePositions.aspx";
 
     let file = File::open("urls.csv").unwrap();
     let mut reader = csv::Reader::from_reader(BufReader::new(file));
@@ -45,7 +68,8 @@ async fn main() {
             has_auth: record[4].parse().unwrap(),
             auth_type: record[5].to_string(),
             auth_header: record[6].to_string(),
-            fetch_interval: record[7].parse().unwrap(),
+            auth_password: record[7].to_string(),
+            fetch_interval: record[8].parse().unwrap(),
         };
 
         agency_infos.push(agency_info);
@@ -61,10 +85,15 @@ async fn main() {
 
         for agency_info in &agency_infos {
             let start_gtfs_pull = Instant::now();
-            let resp_vehicles = reqwest_client
-                .get(&agency_info.realtime_vehicle_positions)
-                .send()
-                .await;
+            let resp_vehicles = make_reqwest_to_agency(
+                &agency_info.realtime_vehicle_positions,
+                agency_info.has_auth,
+                &agency_info.auth_type,
+                &agency_info.auth_header,
+                &agency_info.auth_password,
+            )
+            .send()
+            .await;
             let duration_gtfs_pull = start_gtfs_pull.elapsed();
 
             println!("pull gtfs time is: {:?}", duration_gtfs_pull);
@@ -76,10 +105,15 @@ async fn main() {
                 .set::<String, Vec<u8>, ()>(format!("{}|vehicles", agency_info.onetrip), bytes)
                 .unwrap();
 
-            let resp_trip_updates = reqwest_client
-                .get(&agency_info.realtime_trip_updates)
-                .send()
-                .await;
+            let resp_trip_updates = make_reqwest_to_agency(
+                &agency_info.realtime_trip_updates,
+                agency_info.has_auth,
+                &agency_info.auth_type,
+                &agency_info.auth_header,
+                &agency_info.auth_password,
+            )
+            .send()
+            .await;
 
             let bytes_trip_updates: Vec<u8> =
                 resp_trip_updates.unwrap().bytes().await.unwrap().to_vec();
@@ -89,10 +123,15 @@ async fn main() {
                 bytes_trip_updates,
             );
 
-            let resp_alerts = reqwest_client
-                .get(&agency_info.realtime_alerts)
-                .send()
-                .await;
+            let resp_alerts = make_reqwest_to_agency(
+                &agency_info.realtime_alerts,
+                agency_info.has_auth,
+                &agency_info.auth_type,
+                &agency_info.auth_header,
+                &agency_info.auth_password,
+            )
+            .send()
+            .await;
 
             let bytes_alerts: Vec<u8> = resp_alerts.unwrap().bytes().await.unwrap().to_vec();
 
@@ -100,6 +139,17 @@ async fn main() {
                 format!("{}|alerts", agency_info.onetrip),
                 bytes_alerts,
             );
+
+            //set the last updated time for this agency
+            let _ = con
+                .set::<String, i64, ()>(
+                    format!("{}|last_updated", agency_info.onetrip),
+                    SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .expect("System time not working!")
+                        .as_millis() as i64,
+                )
+                .unwrap();
         }
 
         let duration = lastloop.elapsed();
