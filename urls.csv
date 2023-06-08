@@ -1,6 +1,0 @@
-onestop,realtime_vehicle_positions,realtime_trip_updates,realtime_alerts,has_auth,auth_type,auth_header,auth_password,fetch_interval
-f-octa~rt,https://api.octa.net/GTFSRealTime/protoBuf/VehiclePositions.aspx,https://api.octa.net/GTFSRealTime/protoBuf/tripupdates.aspx,https://api.octa.net/GTFSRealTime/protoBuf/servicealerts.aspx,false,,,,1
-f-bigbluebus~rt,http://gtfs.bigbluebus.com/vehiclepositions.bin,http://gtfs.bigbluebus.com/tripupdates.bin,http://gtfs.bigbluebus.com/alerts.bin,false,,,,1
-f-rta~rt,https://rtabus.com/gtfsrt/vehicles,https://rtabus.com/gtfsrt/trips,https://rtabus.com/gtfsrt/alerts,false,,,,1
-f-ladot~rt,https://ladotbus.com/gtfs-rt/vehiclepositions,https://ladotbus.com/gtfs-rt/tripupdates,https://ladotbus.com/gtfs-rt/alerts,false,,,,1
-f~metrolinktrains~rt,"https://metrolink-gtfsrt.gbsdigital.us/feed/vehicles ","https://metrolink-gtfsrt.gbsdigital.us/feed/trips ",,true,header,X-Api-Key,G6k1CCmIZIaZDdVhZNud675U8z2B5YYQ1O9bOR66,15
