@@ -7,3 +7,4 @@ f~metrolinktrains~rt,"https://metrolink-gtfsrt.gbsdigital.us/feed/vehicles ","ht
 f-metro~losangeles~rail~rt,https://api.goswift.ly/real-time/lametro-rail/gtfs-rt-vehicle-positions,https://api.goswift.ly/real-time/lametro-rail/gtfs-rt-trip-updates,,true,header,Authorization,EXAMPLEKEY,10
 f-metro~losangeles~bus~rt,https://api.goswift.ly/real-time/lametro/gtfs-rt-vehicle-positions,https://api.goswift.ly/real-time/lametro/gtfs-rt-trip-updates,,true,header,Authorization,EXAMPLEKEY,10
 f-pasadenatransit~rt,https://rt.pasadenatransit.net/rtt/public/utility/gtfsrealtime.aspx/vehicleposition,http://rt.pasadenatransit.net/rtt/public/utility/gtfsrealtime.aspx/tripupdate,http://rt.pasadenatransit.net/rtt/public/utility/gtfsrealtime.aspx/alert,false,,,,1
+f-bart~rt,,http://api.bart.gov/gtfsrt/tripupdate.aspx,http://api.bart.gov/gtfsrt/alerts.aspx,false,,,,
