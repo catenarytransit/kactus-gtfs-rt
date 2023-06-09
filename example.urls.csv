@@ -6,3 +6,4 @@ f-ladot~rt,https://ladotbus.com/gtfs-rt/vehiclepositions,https://ladotbus.com/gt
 f~metrolinktrains~rt,"https://metrolink-gtfsrt.gbsdigital.us/feed/vehicles ","https://metrolink-gtfsrt.gbsdigital.us/feed/trips ",,true,header,X-Api-Key,EXAMPLEKEY,15
 f-metro~losangeles~rail~rt,https://api.goswift.ly/real-time/lametro-rail/gtfs-rt-vehicle-positions,https://api.goswift.ly/real-time/lametro-rail/gtfs-rt-trip-updates,,true,header,Authorization,EXAMPLEKEY,10
 f-metro~losangeles~bus~rt,https://api.goswift.ly/real-time/lametro/gtfs-rt-vehicle-positions,https://api.goswift.ly/real-time/lametro/gtfs-rt-trip-updates,,true,header,Authorization,EXAMPLEKEY,10
+f-pasadenatransit~rt,https://rt.pasadenatransit.net/rtt/public/utility/gtfsrealtime.aspx/vehicleposition,http://rt.pasadenatransit.net/rtt/public/utility/gtfsrealtime.aspx/tripupdate,http://rt.pasadenatransit.net/rtt/public/utility/gtfsrealtime.aspx/alert,false,,,,1
