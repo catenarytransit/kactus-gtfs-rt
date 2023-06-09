@@ -34,7 +34,7 @@ fn make_reqwest_to_agency(
 ) -> reqwest::RequestBuilder {
     let reqwest_client = ReqwestClient::new();
 
-    let urltouse = url.clone();
+    let mut urltouse = url.clone();
 
     if auth_type == "url" {
         urltouse = urltouse.replace("PASSWORD", &auth_password);
