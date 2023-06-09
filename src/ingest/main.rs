@@ -37,7 +37,7 @@ fn make_reqwest_to_agency(
     let urltouse = url.clone();
 
     if auth_type == "url" {
-        let _ = urltouse.replace("PASSWORD", &auth_password);
+        let urltouse = urltouse.replace("PASSWORD", &auth_password);
     }
 
     let requesttoreturn = reqwest_client.get(urltouse);
