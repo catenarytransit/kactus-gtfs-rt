@@ -7,3 +7,6 @@ pull requests!
 
 Use Kactus hosted by Kyler's servers!
 `api.kactus.kylerchin.com/`
+
+### urls.csv config
+If the auth_type is set to `url`, then any instance of `PASSWORD` in the urls will be replaced with the value of auth_password
