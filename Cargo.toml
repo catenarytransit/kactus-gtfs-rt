@@ -7,12 +7,13 @@ edition = "2021"
 
 [dependencies]
 tokio = { version = "1.12", features = ["full"] }
-futures = "0.3.6"
+futures = "0.3.28"
 reqwest = "0.11"
 redis = "0.23"
 csv = "1.2"
 hyper = { version = "1.0.0-rc.3", features = ["full"] }
 http-body-util = "0.1.0-rc.2"
+termion = "*"
 
 [[bin]]
 name = "server"

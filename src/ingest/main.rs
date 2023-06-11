@@ -3,6 +3,8 @@ use redis::RedisError;
 use redis::{Client as RedisClient, RedisResult};
 use reqwest::Client as ReqwestClient;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use futures::StreamExt;
+use termion::{color, style};
 
 extern crate csv;
 
@@ -12,7 +14,7 @@ use std::fs::File;
 use std::io::BufReader;
 
 //stores the config for each agency
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct AgencyInfo {
     onetrip: String,
     realtime_vehicle_positions: String,
@@ -110,7 +112,7 @@ async fn insertIntoUrl(category: &String, agency_info: &AgencyInfo) -> Result<()
 
         Ok(())
     } else {
-        println!("Not 200 response");
+        println!("{}{}Not 200 response{}", color::Bg(color::Black), color::Fg(color::Red), style::Reset);
         Err("Not 200 response".into())
     }
 }
@@ -140,17 +142,28 @@ async fn main() {
         };
 
         agency_infos.push(agency_info);
-    }
+    
+
+}
+
+let mut lastloop: std::time::Instant;
 
     loop {
+
         lastloop = Instant::now();
 
-        let redisclient = redis::Client::open("redis://127.0.0.1:6379/").unwrap();
-        let mut con = redisclient.get_connection().unwrap();
+        let agency_infos_cloned = agency_infos.clone();
 
-        //if the agency timeout has not expired, skip it
-        'eachagencyloop: for agency_info in &agency_infos {
-            let last_updated_time =
+        let fetches = futures::stream::iter(
+            agency_infos_cloned.into_iter().map(|agency_info| {
+                async move {
+
+                    let redisclient = redis::Client::open("redis://127.0.0.1:6379/").unwrap();
+                    let mut con = redisclient.get_connection().unwrap();
+
+                    let mut canrun = true;
+
+                    let last_updated_time =
                 con.get::<String, u64>(format!("metagtfsrt|{}|last_updated", agency_info.onetrip));
 
             match last_updated_time {
@@ -160,37 +173,56 @@ async fn main() {
                         .expect("System time not working!")
                         .as_millis() as u64)
                         - last_updated_time;
+/* 
+                            println!(
+                                "{}{}{} {}{} {}{} {}{}{}",
+                                color::Bg(color::Blue),
+                                agency_info.onetrip,
+                                style::Reset,
+                                color::Fg(color::White),
+                                last_updated_time,
+                                color::Fg(color::Cyan),
+                                SystemTime::now()
+                                .duration_since(UNIX_EPOCH)
+                                .expect("System time not working!")
+                                .as_millis() as u64,
+                                color::Fg(color::Blue),
+                                time_since_last_run,
+                                style::Reset
+                            );
+                    */
 
                     if time_since_last_run < (agency_info.fetch_interval * 1000.0) as u64 {
                         println!(
-                            "skipping {} because it was last updated {} seconds ago",
+                            "{}skipping {} because it was last updated {} ms ago{}",
+                            color::Bg(color::Blue),
                             agency_info.onetrip,
-                            time_since_last_run / 1000
+                            time_since_last_run,
+                            style::Reset
                         );
-                        continue 'eachagencyloop;
+                        canrun = false;
                     }
                 }
-                Err(_) => {}
-            }
+                Err(last_updated_time) => {
+                    println!("{}Error! Redis didn't fetch last_updated_time for {}{}", color::Bg(color::Black), agency_info.onetrip, style::Reset);
+                    println!("{}{:?}{}", color::Bg(color::Black), last_updated_time, style::Reset);
+                }
+            } 
 
-            println!("{} is being updated", agency_info.onetrip);
+                    if canrun == true {
+                        if agency_info.realtime_vehicle_positions.is_empty() == false {
+                            let _ = insertIntoUrl(&("vehicles".to_string()), &agency_info).await;
+                            }
+            
+                            if agency_info.realtime_trip_updates.is_empty() == false {
+                            let _ = insertIntoUrl(&("trip_updates".to_string()), &agency_info).await;
+                            }
+            
+                            if agency_info.realtime_alerts.is_empty() == false {
+                            let _ = insertIntoUrl(&("alerts".to_string()), &agency_info).await;
+                            }
 
-            if agency_info.realtime_vehicle_positions.is_empty() == false {
-                println!("{} has vehicles url", agency_info.onetrip);
-                let _ = insertIntoUrl(&("vehicles".to_string()), &agency_info).await;
-            } else {
-                println!("{} has no vehicles url", agency_info.onetrip);
-            }
-
-            if agency_info.realtime_trip_updates.is_empty() == false {
-                let _ = insertIntoUrl(&("trip_updates".to_string()), &agency_info).await;
-            }
-
-            if agency_info.realtime_alerts.is_empty() == false {
-                let _ = insertIntoUrl(&("alerts".to_string()), &agency_info).await;
-            }
-
-            //set the last updated time for this agency
+                            //set the last updated time for this agency
             let _ = con
                 .set::<String, u64, ()>(
                     format!("metagtfsrt|{}|last_updated", agency_info.onetrip),
@@ -200,11 +232,16 @@ async fn main() {
                         .as_millis() as u64,
                 )
                 .unwrap();
-        }
+                    }
+                }
+        })
+        ).buffer_unordered(50).collect::<Vec<()>>();
+        println!("Waiting...");
+        fetches.await;
 
         let duration = lastloop.elapsed();
 
-        println!("loop time is: {:?}", duration);
+        println!("{}loop time is: {:?}{}", color::Bg(color::Green) ,duration, style::Reset);
 
         //if the iteration of the loop took <1 second, sleep for the remainder of the second
         if (duration.as_millis() as i32) < 1000 {
