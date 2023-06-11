@@ -12,3 +12,4 @@ f-trimet~rt,http://developer.trimet.org/ws/gtfs/VehiclePositions?appID=PASSWORD,
 f-translink~rt,https://gtfs.translink.ca/v2/gtfsposition?apikey=PASSWORD,https://gtfs.translink.ca/v2/gtfsrealtime?apikey=PASSWORD,https://gtfs.translink.ca/v2/gtfsalerts?apikey=PASSWORD,true,url,apikey,,1
 f-foothilltransit~rt,https://foothilltransit.rideralerts.com/myStop/GTFS-Realtime.ashx?Type=VehiclePosition,https://foothilltransit.rideralerts.com/myStop/GTFS-Realtime.ashx?Type=TripUpdate,https://foothilltransit.rideralerts.com/myStop/GTFS-Realtime.ashx?Type=Alert,false,,,,1
 f-longbeachtransit~rt,https://lbtgtfs.lbtransit.com/TMGTFSRealTimeWebService/Vehicle/VehiclePositions.pb,https://lbtgtfs.lbtransit.com/TMGTFSRealTimeWebService/TripUpdate/TripUpdates.pb,https://lbtgtfs.lbtransit.com/TMGTFSRealTimeWebService/Alert/Alerts.pb,false,,,,1
+f-culvercity~rt,https://nextccbus.org/gtfsrt/vehicles,https://nextccbus.org/gtfsrt/trips,https://nextccbus.org/gtfsrt/alerts,false,,,,1
