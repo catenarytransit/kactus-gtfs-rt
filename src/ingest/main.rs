@@ -94,21 +94,32 @@ async fn insertIntoUrl(category: &String, agency_info: &AgencyInfo) -> Result<()
             &agency_info.onetrip, category, duration_gtfs_pull
         );
 
-        let bytes: Vec<u8> = resp.bytes().await.unwrap().to_vec();
+        //let bytes: Vec<u8> = resp.bytes().await.unwrap().to_vec();
 
-        println!(
-            "{} {} bytes: {}",
-            agency_info.onetrip,
-            category,
-            bytes.len()
-        );
+        match resp.bytes().await {
+            Ok(bytes_pre) => {
 
-        let _: () = con
-            .set(
-                format!("gtfsrt|{}|{}", agency_info.onetrip, category),
-                bytes,
-            )
-            .unwrap();
+                let bytes = bytes_pre.to_vec();
+
+                println!(
+                    "{} {} bytes: {}",
+                    agency_info.onetrip,
+                    category,
+                    bytes.len()
+                );
+        
+                let _: () = con
+                    .set(
+                        format!("gtfsrt|{}|{}", agency_info.onetrip, category),
+                        bytes.to_vec(),
+                    )
+                    .unwrap();
+            }
+            Err(e) => {
+                println!("error getting bytes");
+                return Err(e.into());
+            }
+        }
 
         Ok(())
     } else {
@@ -143,8 +154,6 @@ async fn main() {
         };
 
         agency_infos.push(agency_info);
-    
-
 }
 
 let mut lastloop: std::time::Instant;

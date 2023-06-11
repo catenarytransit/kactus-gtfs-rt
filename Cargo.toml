@@ -22,3 +22,7 @@ path = "src/main.rs"
 [[bin]]
 name = "ingest"
 path = "src/ingest/main.rs"
+
+[[bin]]
+name = "testcachetime"
+path = "src/test-cache-time/main.rs"
