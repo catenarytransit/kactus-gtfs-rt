@@ -9,3 +9,4 @@ f-metro~losangeles~bus~rt,https://api.goswift.ly/real-time/lametro/gtfs-rt-vehic
 f-pasadenatransit~rt,https://rt.pasadenatransit.net/rtt/public/utility/gtfsrealtime.aspx/vehicleposition,http://rt.pasadenatransit.net/rtt/public/utility/gtfsrealtime.aspx/tripupdate,http://rt.pasadenatransit.net/rtt/public/utility/gtfsrealtime.aspx/alert,false,,,,1
 f-bart~rt,,http://api.bart.gov/gtfsrt/tripupdate.aspx,http://api.bart.gov/gtfsrt/alerts.aspx,false,,,,1
 f-trimet~rt,http://developer.trimet.org/ws/gtfs/VehiclePositions?appID=PASSWORD,http://developer.trimet.org/ws/V1/TripUpdate/?appID=PASSWORD,http://developer.trimet.org/ws/V1/FeedSpecAlerts/?appID=PASSWORD,true,header,appID,EXAMPLEKEY,1
+f-translink~rt,https://gtfs.translink.ca/v2/gtfsposition?apikey=PASSWORD,https://gtfs.translink.ca/v2/gtfsrealtime?apikey=PASSWORD,https://gtfs.translink.ca/v2/gtfsalerts?apikey=PASSWORD,true,url,apikey,,1
