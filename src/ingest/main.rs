@@ -113,6 +113,7 @@ async fn insertIntoUrl(category: &String, agency_info: &AgencyInfo) -> Result<()
         Ok(())
     } else {
         println!("{}{}Not 200 response{}", color::Bg(color::Black), color::Fg(color::Red), style::Reset);
+        println!("{}{:?}{}", color::Fg(color::Red), resp.text().await.unwrap(), style::Reset);
         Err("Not 200 response".into())
     }
 }
