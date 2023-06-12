@@ -219,6 +219,10 @@ let mut lastloop: std::time::Instant;
                 }
             } 
 
+                    if &agency_info.auth_password == "EXAMPLEKEY" {
+                        canrun = false;
+                    }
+
                     if canrun == true {
                         if agency_info.realtime_vehicle_positions.is_empty() == false {
                             let _ = insertIntoUrl(&("vehicles".to_string()), &agency_info).await;
