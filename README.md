@@ -5,7 +5,7 @@ pull requests!
 
 ### Hosted by Kyler
 
-Use Kactus hosted by Kyler's servers!
+Use Kactus hosted by Kyler's servers! (NOT READY YET, DO NOT USE YET)
 `api.kactus.kylerchin.com/`
 
 ### urls.csv config
