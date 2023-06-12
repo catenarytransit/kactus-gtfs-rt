@@ -8,6 +8,8 @@ use termion::{color, style};
 
 extern crate csv;
 
+extern crate farmhash;
+
 use csv::Reader;
 use std::error::Error;
 use std::fs::File;
@@ -52,7 +54,8 @@ fn make_reqwest_to_agency(
     requesttoreturn
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let file = File::open("urls.csv").unwrap();
 
     let mut reader = csv::Reader::from_reader(BufReader::new(file));
@@ -75,5 +78,76 @@ fn main() {
         };
 
         agency_infos.push(agency_info);
+    }
+
+    let connect_time = Instant::now();
+
+    let redisclient = redis::Client::open("redis://127.0.0.1:6379/").unwrap();
+
+    let mut con = redisclient.get_connection().unwrap();
+
+    let redis_connected = Instant::now();
+
+    let timetoconnect = redis_connected.duration_since(connect_time);
+
+    println!("Time to connect to redis: {}µs", timetoconnect.as_micros());
+
+    for agency_info in agency_infos {
+        /*
+        let a = Instant::now();
+        let b = Instant::now();
+        println!("Test time, {}ns", b.duration_since(a).as_nanos());
+        */
+
+        let resp = make_reqwest_to_agency(
+            &agency_info.realtime_vehicle_positions,
+            agency_info.has_auth,
+            &agency_info.auth_type,
+            &agency_info.auth_header,
+            &agency_info.auth_password,
+        )
+        .send()
+        .await
+        .unwrap();
+
+        match resp.bytes().await {
+            Ok(bytes_pre) => {
+                let bytes = bytes_pre.to_vec();
+
+                println!("Onetrip: {}", &agency_info.onetrip);
+
+                println!("Bytes: {}", bytes.len());
+
+                let timetostorestart = Instant::now();
+                let _: () = con.set(format!("gtfstest|{}", &agency_info.onetrip), &bytes).unwrap();
+                let timetostoreend = Instant::now();
+                let timetostore = timetostoreend.duration_since(timetostorestart);
+                println!("Time to store: {}µs", timetostore.as_micros());
+
+                let timetocomputehash_start = Instant::now();
+                let hash: u64 = farmhash::hash64(&bytes);
+                let timetocomputehash_end = Instant::now();
+                let timetocomputehash = timetocomputehash_end.duration_since(timetocomputehash_start);
+                println!("Time to compute hash: {}µs", timetocomputehash.as_micros());
+                println!("hash: {}", hash);
+                //store the hash into redis
+
+                let timetostorehash_start = Instant::now();
+                let _: () = con.set(format!("gtfstesthash|{}", &agency_info.onetrip), hash).unwrap();
+                let timetostorehash_end = Instant::now();
+                let timetostorehash = timetostorehash_end.duration_since(timetostorehash_start);
+                println!("Time to store hash: {}µs", timetostorehash.as_micros());
+
+                let timetoread_start = Instant::now();
+                let _: u64 = con.get(format!("gtfstesthash|{}", &agency_info.onetrip)).unwrap();
+                let timetoread_end = Instant::now();
+                let timetoread = timetoread_end.duration_since(timetoread_start);
+                println!("Time to read: {}µs", timetoread.as_micros());
+
+            }
+            Err(e) => {
+                println!("Error {}: {}", &agency_info.onetrip ,e);
+            }
+        }
     }
 }
