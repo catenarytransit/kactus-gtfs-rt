@@ -142,8 +142,7 @@ async fn main() {
                 let _: u64 = con.get(format!("gtfstesthash|{}", &agency_info.onetrip)).unwrap();
                 let timetoread_end = Instant::now();
                 let timetoread = timetoread_end.duration_since(timetoread_start);
-                println!("Time to read: {}µs", timetoread.as_micros());
-
+                println!("Time to read: {}µs\n", timetoread.as_micros());
             }
             Err(e) => {
                 println!("Error {}: {}", &agency_info.onetrip ,e);
