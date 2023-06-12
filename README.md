@@ -14,7 +14,7 @@ sudo apt install redis
 sudo systemctl start redis-server
 ```
 
-Run the ingest engine
+### Run the ingest engine
 ```
 cargo run --bin ingest
 ```
