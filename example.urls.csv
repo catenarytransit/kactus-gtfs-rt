@@ -3,7 +3,7 @@ f-octa~rt,https://api.octa.net/GTFSRealTime/protoBuf/VehiclePositions.aspx,https
 f-bigbluebus~rt,http://gtfs.bigbluebus.com/vehiclepositions.bin,http://gtfs.bigbluebus.com/tripupdates.bin,http://gtfs.bigbluebus.com/alerts.bin,false,,,,1,
 f-rta~rt,https://rtabus.com/gtfsrt/vehicles,https://rtabus.com/gtfsrt/trips,https://rtabus.com/gtfsrt/alerts,false,,,,1,
 f-ladot~rt,https://ladotbus.com/gtfs-rt/vehiclepositions,https://ladotbus.com/gtfs-rt/tripupdates,https://ladotbus.com/gtfs-rt/alerts,false,,,,1,
-f~metrolinktrains~rt,"https://metrolink-gtfsrt.gbsdigital.us/feed/vehicles ","https://metrolink-gtfsrt.gbsdigital.us/feed/trips ",,true,header,X-Api-Key,EXAMPLEKEY,15,
+f~metrolinktrains~rt,https://metrolink-gtfsrt.gbsdigital.us/feed/gtfsrt-vehicles,https://metrolink-gtfsrt.gbsdigital.us/feed/gtfsrt-trips,,true,header,X-Api-Key,EXAMPLEKEY,15,
 f-metro~losangeles~rail~rt,https://api.goswift.ly/real-time/lametro-rail/gtfs-rt-vehicle-positions,https://api.goswift.ly/real-time/lametro-rail/gtfs-rt-trip-updates,,true,header,Authorization,EXAMPLEKEY,10,
 f-metro~losangeles~bus~rt,https://api.goswift.ly/real-time/lametro/gtfs-rt-vehicle-positions,https://api.goswift.ly/real-time/lametro/gtfs-rt-trip-updates,,true,header,Authorization,EXAMPLEKEY,10,
 f-pasadenatransit~rt,https://rt.pasadenatransit.net/rtt/public/utility/gtfsrealtime.aspx/vehicleposition,http://rt.pasadenatransit.net/rtt/public/utility/gtfsrealtime.aspx/tripupdate,http://rt.pasadenatransit.net/rtt/public/utility/gtfsrealtime.aspx/alert,false,,,,1,
