@@ -6,6 +6,9 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use futures::StreamExt;
 use termion::{color, style};
 
+extern crate rand;
+use crate::rand::prelude::SliceRandom;
+
 extern crate csv;
 
 use csv::Reader;
@@ -25,6 +28,7 @@ struct AgencyInfo {
     auth_header: String,
     auth_password: String,
     fetch_interval: f32,
+    multiauth: Option<Vec<String>>
 }
 
 fn make_reqwest_to_agency(
@@ -33,19 +37,38 @@ fn make_reqwest_to_agency(
     auth_type: &String,
     auth_header: &String,
     auth_password: &String,
+    multiauth: &Option<Vec<String>>
 ) -> reqwest::RequestBuilder {
     let reqwest_client = ReqwestClient::new();
 
     let mut urltouse = url.clone();
 
     if auth_type == "url" {
-        urltouse = urltouse.replace("PASSWORD", &auth_password);
+        let mut passwordtouse = auth_password.clone();
+
+        if let Some(multiauth) = multiauth {
+            //randomly select one of the auths
+            let mut rng = rand::thread_rng();
+            let random_auth = multiauth.choose(&mut rng).unwrap();
+            passwordtouse = random_auth.clone();
+        }
+
+        urltouse = urltouse.replace("PASSWORD", &passwordtouse);
     }
 
     let requesttoreturn = reqwest_client.get(urltouse);
 
+        let mut passwordtouse = auth_password.clone();
+
+        if let Some(multiauth) = multiauth {
+            //randomly select one of the auths
+            let mut rng = rand::thread_rng();
+            let random_auth = multiauth.choose(&mut rng).unwrap();
+            passwordtouse = random_auth.clone();
+        }
+
     if auth_type == "header" {
-        return requesttoreturn.header(auth_header, auth_password);
+        return requesttoreturn.header(auth_header, passwordtouse);
     }
 
     requesttoreturn
@@ -79,6 +102,7 @@ async fn insertIntoUrl(category: &String, agency_info: &AgencyInfo) -> Result<()
         &agency_info.auth_type,
         &agency_info.auth_header,
         &agency_info.auth_password,
+        &agency_info.multiauth
     )
     .send()
     .await
@@ -151,6 +175,7 @@ async fn main() {
             auth_header: record[6].to_string(),
             auth_password: record[7].to_string(),
             fetch_interval: record[8].parse().unwrap(),
+            multiauth: convert_multiauth_to_vec(&(record[9].to_string())),
         };
 
         agency_infos.push(agency_info);
@@ -263,5 +288,21 @@ let mut lastloop: std::time::Instant;
             println!("sleeping for {:?}", sleep_duration);
             std::thread::sleep(sleep_duration);
         }
+    }
+}
+
+fn convert_multiauth_to_vec(inputstring:&String) -> Option<Vec<String>> {
+    if inputstring.is_empty() == false {
+        let mut outputvec: Vec<String> = Vec::new();
+
+        let split = inputstring.split(",");
+
+        for s in split {
+            outputvec.push(s.to_string());
+        }
+
+        Some(outputvec)
+    } else {
+        None
     }
 }
