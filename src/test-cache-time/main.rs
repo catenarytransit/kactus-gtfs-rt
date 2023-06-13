@@ -119,7 +119,9 @@ async fn main() {
                 println!("Bytes: {}", bytes.len());
 
                 let timetostorestart = Instant::now();
-                let _: () = con.set(format!("gtfstest|{}", &agency_info.onetrip), &bytes).unwrap();
+                let _: () = con
+                    .set(format!("gtfstest|{}", &agency_info.onetrip), &bytes)
+                    .unwrap();
                 let timetostoreend = Instant::now();
                 let timetostore = timetostoreend.duration_since(timetostorestart);
                 println!("Time to store: {}µs", timetostore.as_micros());
@@ -127,25 +129,30 @@ async fn main() {
                 let timetocomputehash_start = Instant::now();
                 let hash: u64 = farmhash::hash64(&bytes);
                 let timetocomputehash_end = Instant::now();
-                let timetocomputehash = timetocomputehash_end.duration_since(timetocomputehash_start);
+                let timetocomputehash =
+                    timetocomputehash_end.duration_since(timetocomputehash_start);
                 println!("Time to compute hash: {}µs", timetocomputehash.as_micros());
                 println!("hash: {}", hash);
                 //store the hash into redis
 
                 let timetostorehash_start = Instant::now();
-                let _: () = con.set(format!("gtfstesthash|{}", &agency_info.onetrip), hash).unwrap();
+                let _: () = con
+                    .set(format!("gtfstesthash|{}", &agency_info.onetrip), hash)
+                    .unwrap();
                 let timetostorehash_end = Instant::now();
                 let timetostorehash = timetostorehash_end.duration_since(timetostorehash_start);
                 println!("Time to store hash: {}µs", timetostorehash.as_micros());
 
                 let timetoread_start = Instant::now();
-                let _: u64 = con.get(format!("gtfstesthash|{}", &agency_info.onetrip)).unwrap();
+                let _: u64 = con
+                    .get(format!("gtfstesthash|{}", &agency_info.onetrip))
+                    .unwrap();
                 let timetoread_end = Instant::now();
                 let timetoread = timetoread_end.duration_since(timetoread_start);
                 println!("Time to read: {}µs\n", timetoread.as_micros());
             }
             Err(e) => {
-                println!("Error {}: {}", &agency_info.onetrip ,e);
+                println!("Error {}: {}", &agency_info.onetrip, e);
             }
         }
     }

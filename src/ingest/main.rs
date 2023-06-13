@@ -1,11 +1,11 @@
+use futures::StreamExt;
 use redis::Commands;
 use redis::RedisError;
 use redis::{Client as RedisClient, RedisResult};
 use reqwest::Client as ReqwestClient;
-use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
-use futures::StreamExt;
-use termion::{color, style};
 use std::thread;
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use termion::{color, style};
 
 extern crate rand;
 use crate::rand::prelude::SliceRandom;
@@ -29,7 +29,7 @@ struct AgencyInfo {
     auth_header: String,
     auth_password: String,
     fetch_interval: f32,
-    multiauth: Option<Vec<String>>
+    multiauth: Option<Vec<String>>,
 }
 
 fn make_reqwest_to_agency(
@@ -38,7 +38,7 @@ fn make_reqwest_to_agency(
     auth_type: &String,
     auth_header: &String,
     auth_password: &String,
-    multiauth: &Option<Vec<String>>
+    multiauth: &Option<Vec<String>>,
 ) -> reqwest::RequestBuilder {
     let reqwest_client = ReqwestClient::new();
 
@@ -59,14 +59,14 @@ fn make_reqwest_to_agency(
 
     let requesttoreturn = reqwest_client.get(urltouse);
 
-        let mut passwordtouse = auth_password.clone();
+    let mut passwordtouse = auth_password.clone();
 
-        if let Some(multiauth) = multiauth {
-            //randomly select one of the auths
-            let mut rng = rand::thread_rng();
-            let random_auth = multiauth.choose(&mut rng).unwrap();
-            passwordtouse = random_auth.clone();
-        }
+    if let Some(multiauth) = multiauth {
+        //randomly select one of the auths
+        let mut rng = rand::thread_rng();
+        let random_auth = multiauth.choose(&mut rng).unwrap();
+        passwordtouse = random_auth.clone();
+    }
 
     if auth_type == "header" {
         return requesttoreturn.header(auth_header, passwordtouse);
@@ -103,7 +103,7 @@ async fn insertIntoUrl(category: &String, agency_info: &AgencyInfo) -> Result<()
         &agency_info.auth_type,
         &agency_info.auth_header,
         &agency_info.auth_password,
-        &agency_info.multiauth
+        &agency_info.multiauth,
     )
     .send()
     .await
@@ -123,7 +123,6 @@ async fn insertIntoUrl(category: &String, agency_info: &AgencyInfo) -> Result<()
 
         match resp.bytes().await {
             Ok(bytes_pre) => {
-
                 let bytes = bytes_pre.to_vec();
 
                 println!(
@@ -132,7 +131,7 @@ async fn insertIntoUrl(category: &String, agency_info: &AgencyInfo) -> Result<()
                     category,
                     bytes.len()
                 );
-        
+
                 let _: () = con
                     .set(
                         format!("gtfsrt|{}|{}", agency_info.onetrip, category),
@@ -148,8 +147,18 @@ async fn insertIntoUrl(category: &String, agency_info: &AgencyInfo) -> Result<()
 
         Ok(())
     } else {
-        println!("{}{}Not 200 response{}", color::Bg(color::Black), color::Fg(color::Red), style::Reset);
-        println!("{}{:?}{}", color::Fg(color::Red), resp.text().await.unwrap(), style::Reset);
+        println!(
+            "{}{}Not 200 response{}",
+            color::Bg(color::Black),
+            color::Fg(color::Red),
+            style::Reset
+        );
+        println!(
+            "{}{:?}{}",
+            color::Fg(color::Red),
+            resp.text().await.unwrap(),
+            style::Reset
+        );
         Err("Not 200 response".into())
     }
 }
@@ -180,111 +189,120 @@ async fn main() {
         };
 
         agency_infos.push(agency_info);
-}
+    }
 
-let mut lastloop: std::time::Instant;
+    let mut lastloop: std::time::Instant;
 
     loop {
-
         lastloop = Instant::now();
 
         let agency_infos_cloned = agency_infos.clone();
 
-        let fetches = futures::stream::iter(
-            agency_infos_cloned.into_iter().map(|agency_info| {
-                async move {
+        let fetches = futures::stream::iter(agency_infos_cloned.into_iter().map(|agency_info| {
+            async move {
+                let redisclient = redis::Client::open("redis://127.0.0.1:6379/").unwrap();
+                let mut con = redisclient.get_connection().unwrap();
 
-                    let redisclient = redis::Client::open("redis://127.0.0.1:6379/").unwrap();
-                    let mut con = redisclient.get_connection().unwrap();
+                let mut canrun = true;
 
-                    let mut canrun = true;
+                let last_updated_time = con
+                    .get::<String, u64>(format!("metagtfsrt|{}|last_updated", agency_info.onetrip));
 
-                    let last_updated_time =
-                con.get::<String, u64>(format!("metagtfsrt|{}|last_updated", agency_info.onetrip));
+                match last_updated_time {
+                    Ok(last_updated_time) => {
+                        let time_since_last_run = (SystemTime::now()
+                            .duration_since(UNIX_EPOCH)
+                            .expect("System time not working!")
+                            .as_millis() as u64)
+                            - last_updated_time;
+                        /*
+                                println!(
+                                    "{}{}{} {}{} {}{} {}{}{}",
+                                    color::Bg(color::Blue),
+                                    agency_info.onetrip,
+                                    style::Reset,
+                                    color::Fg(color::White),
+                                    last_updated_time,
+                                    color::Fg(color::Cyan),
+                                    SystemTime::now()
+                                    .duration_since(UNIX_EPOCH)
+                                    .expect("System time not working!")
+                                    .as_millis() as u64,
+                                    color::Fg(color::Blue),
+                                    time_since_last_run,
+                                    style::Reset
+                                );
+                        */
 
-            match last_updated_time {
-                Ok(last_updated_time) => {
-                    let time_since_last_run = (SystemTime::now()
-                        .duration_since(UNIX_EPOCH)
-                        .expect("System time not working!")
-                        .as_millis() as u64)
-                        - last_updated_time;
-/* 
+                        if time_since_last_run < (agency_info.fetch_interval * 1000.0) as u64 {
                             println!(
-                                "{}{}{} {}{} {}{} {}{}{}",
+                                "{}skipping {} because it was last updated {} ms ago{}",
                                 color::Bg(color::Blue),
                                 agency_info.onetrip,
-                                style::Reset,
-                                color::Fg(color::White),
-                                last_updated_time,
-                                color::Fg(color::Cyan),
-                                SystemTime::now()
-                                .duration_since(UNIX_EPOCH)
-                                .expect("System time not working!")
-                                .as_millis() as u64,
-                                color::Fg(color::Blue),
                                 time_since_last_run,
                                 style::Reset
                             );
-                    */
-
-                    if time_since_last_run < (agency_info.fetch_interval * 1000.0) as u64 {
+                            canrun = false;
+                        }
+                    }
+                    Err(last_updated_time) => {
                         println!(
-                            "{}skipping {} because it was last updated {} ms ago{}",
-                            color::Bg(color::Blue),
+                            "{}Error! Redis didn't fetch last_updated_time for {}{}",
+                            color::Bg(color::Black),
                             agency_info.onetrip,
-                            time_since_last_run,
                             style::Reset
                         );
-                        canrun = false;
+                        println!(
+                            "{}{:?}{}",
+                            color::Bg(color::Black),
+                            last_updated_time,
+                            style::Reset
+                        );
                     }
                 }
-                Err(last_updated_time) => {
-                    println!("{}Error! Redis didn't fetch last_updated_time for {}{}", color::Bg(color::Black), agency_info.onetrip, style::Reset);
-                    println!("{}{:?}{}", color::Bg(color::Black), last_updated_time, style::Reset);
-                }
-            } 
 
-                    if &agency_info.auth_password == "EXAMPLEKEY" {
-                        canrun = false;
+                if &agency_info.auth_password == "EXAMPLEKEY" {
+                    canrun = false;
+                }
+
+                if canrun == true {
+                    if !agency_info.realtime_vehicle_positions.is_empty() {
+                        let _ = insertIntoUrl(&("vehicles".to_string()), &agency_info).await;
                     }
 
-                    if canrun == true {
-                        if !agency_info.realtime_vehicle_positions.is_empty() {
-                            
-                                let _ = insertIntoUrl(&("vehicles".to_string()), &agency_info).await;
-                        }
-                        
-                        if !agency_info.realtime_trip_updates.is_empty() {
-                           
-                                let _ = insertIntoUrl(&("trip_updates".to_string()), &agency_info).await;
-                            
-                        }
-                        
-                        if !agency_info.realtime_alerts.is_empty() {
-                           
-                                let _ = insertIntoUrl(&("alerts".to_string()), &agency_info).await;
-                        }
-                            //set the last updated time for this agency
-            let _ = con
-                .set::<String, u64, ()>(
-                    format!("metagtfsrt|{}|last_updated", agency_info.onetrip),
-                    SystemTime::now()
-                        .duration_since(UNIX_EPOCH)
-                        .expect("System time not working!")
-                        .as_millis() as u64,
-                )
-                .unwrap();
+                    if !agency_info.realtime_trip_updates.is_empty() {
+                        let _ = insertIntoUrl(&("trip_updates".to_string()), &agency_info).await;
                     }
+
+                    if !agency_info.realtime_alerts.is_empty() {
+                        let _ = insertIntoUrl(&("alerts".to_string()), &agency_info).await;
+                    }
+                    //set the last updated time for this agency
+                    let _ = con
+                        .set::<String, u64, ()>(
+                            format!("metagtfsrt|{}|last_updated", agency_info.onetrip),
+                            SystemTime::now()
+                                .duration_since(UNIX_EPOCH)
+                                .expect("System time not working!")
+                                .as_millis() as u64,
+                        )
+                        .unwrap();
                 }
-        })
-        ).buffer_unordered(50).collect::<Vec<()>>();
+            }
+        }))
+        .buffer_unordered(50)
+        .collect::<Vec<()>>();
         println!("Waiting...");
         fetches.await;
 
         let duration = lastloop.elapsed();
 
-        println!("{}loop time is: {:?}{}", color::Bg(color::Green) ,duration, style::Reset);
+        println!(
+            "{}loop time is: {:?}{}",
+            color::Bg(color::Green),
+            duration,
+            style::Reset
+        );
 
         //if the iteration of the loop took <1 second, sleep for the remainder of the second
         if (duration.as_millis() as i32) < 1000 {
@@ -295,7 +313,7 @@ let mut lastloop: std::time::Instant;
     }
 }
 
-fn convert_multiauth_to_vec(inputstring:&String) -> Option<Vec<String>> {
+fn convert_multiauth_to_vec(inputstring: &String) -> Option<Vec<String>> {
     if inputstring.is_empty() == false {
         let mut outputvec: Vec<String> = Vec::new();
 
