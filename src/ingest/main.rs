@@ -5,6 +5,7 @@ use reqwest::Client as ReqwestClient;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use futures::StreamExt;
 use termion::{color, style};
+use std::thread;
 
 extern crate rand;
 use crate::rand::prelude::SliceRandom;
@@ -249,17 +250,33 @@ let mut lastloop: std::time::Instant;
                     }
 
                     if canrun == true {
-                        if agency_info.realtime_vehicle_positions.is_empty() == false {
-                            let _ = insertIntoUrl(&("vehicles".to_string()), &agency_info).await;
-                            }
-            
-                            if agency_info.realtime_trip_updates.is_empty() == false {
-                            let _ = insertIntoUrl(&("trip_updates".to_string()), &agency_info).await;
-                            }
-            
-                            if agency_info.realtime_alerts.is_empty() == false {
-                            let _ = insertIntoUrl(&("alerts".to_string()), &agency_info).await;
-                            }
+                        if !agency_info.realtime_vehicle_positions.is_empty() {
+                            let agency_info_clone = agency_info.clone();
+                            let handle = thread::spawn(move || {
+                                let _ = insertIntoUrl(&("vehicles".to_string()), &agency_info_clone).await;
+                            });
+                            handles.push(handle);
+                        }
+                        
+                        if !agency_info.realtime_trip_updates.is_empty() {
+                            let agency_info_clone = agency_info.clone();
+                            let handle = thread::spawn(move || {
+                                let _ = insertIntoUrl(&("trip_updates".to_string()), &agency_info_clone).await;
+                            });
+                            handles.push(handle);
+                        }
+                        
+                        if !agency_info.realtime_alerts.is_empty() {
+                            let agency_info_clone = agency_info.clone();
+                            let handle = thread::spawn(move || {
+                                let _ = insertIntoUrl(&("alerts".to_string()), &agency_info_clone).await;
+                            });
+                            handles.push(handle);
+                        }
+                        
+                        for handle in handles {
+                            handle.join().unwrap();
+                        }
 
                             //set the last updated time for this agency
             let _ = con
