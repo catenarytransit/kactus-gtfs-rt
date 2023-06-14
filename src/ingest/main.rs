@@ -105,6 +105,7 @@ async fn insertIntoUrl(category: &String, agency_info: &AgencyInfo) -> Result<()
         &agency_info.auth_password,
         &agency_info.multiauth,
     )
+    .timeout(Duration::from_secs(5))
     .send()
     .await
     .unwrap();
