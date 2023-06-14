@@ -23,6 +23,8 @@ cargo run --bin ingest
 Use Kactus hosted by Kyler's servers! 
 `https://kactusapi.kylerchin.com/gtfsrt/?feed=[onestopid]&category=[category]`
 
+Check uptime: https://stats.uptimerobot.com/xWx7zCm4p0
+
 Onestop Feed IDs should be realtime feed ids from [transitland/transitland-atlas](https://github.com/transitland/transitland-atlas) aka https://transit.land/
 
 Valid categories are 
