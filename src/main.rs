@@ -1,38 +1,43 @@
-use std::convert::Infallible;
-use std::net::SocketAddr;
+use actix_web::{web, App, HttpRequest, HttpResponse, HttpServer, Responder};
+extern crate qstring;
+use qstring::QString;
 
-use http_body_util::Full;
-use hyper::body::Bytes;
-use hyper::server::conn::http1;
-use hyper::service::service_fn;
-use hyper::{Request, Response};
-use tokio::net::TcpListener;
-
-async fn hello(_: Request<hyper::body::Incoming>) -> Result<Response<Full<Bytes>>, Infallible> {
-    Ok(Response::new(Full::new(Bytes::from("Hello, World!"))))
+async fn index(req: HttpRequest) -> impl Responder {
+    HttpResponse::Ok().body("Hello world!")
 }
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+async fn gtfsrt(req: HttpRequest) -> impl Responder {
+    let redisclient = redis::Client::open("redis://127.0.0.1:6379/").unwrap();
+    let mut con = redisclient.get_connection().unwrap();
 
-    // We create a TcpListener and bind it to 127.0.0.1:3000
-    let listener = TcpListener::bind(addr).await?;
+    let query_str = req.query_string(); // "name=ferret"
+    let qs = QString::from(query_str);
+    let feed = qs.get("feed").unwrap();
 
-    // We start a loop to continuously accept incoming connections
-    loop {
-        let (stream, _) = listener.accept().await?;
+    let category = qs.get("category").unwrap();
 
-        // Spawn a tokio task to serve multiple connections concurrently
-        tokio::task::spawn(async move {
-            // Finally, we bind the incoming connection to our `hello` service
-            if let Err(err) = http1::Builder::new()
-                // `service_fn` converts our function in a `Service`
-                .serve_connection(stream, service_fn(hello))
-                .await
-            {
-                println!("Error serving connection: {:?}", err);
-            }
-        });
+    //HttpResponse::Ok().body(format!("Requested {}/{}", feed, category))
+
+    let data = con.get(format!("gtfsrt|{}|{}", feed, category)).await;
+
+    match data {
+        Ok(data) => HttpResponse::Ok().body(data),
+        Err(e) => HttpResponse::Ok().body(format!("Error: {}", e)),
     }
+}
+
+#[actix_web::main]
+async fn main() -> std::io::Result<()> {
+    // Create a new HTTP server.
+    let builder = HttpServer::new(|| {
+        App::new()
+            .route("/", web::get().to(index))
+            .route("/gtfsrt/", web::get().to(gtfsrt))
+    })
+    .workers(4);
+
+    // Bind the server to port 8080.
+    let _ = builder.bind("127.0.0.1:8080").unwrap().run().await;
+
+    Ok(())
 }
