@@ -1,9 +1,10 @@
 use actix_web::{web, App, HttpRequest, HttpResponse, HttpServer, Responder};
+use redis::Commands;
 extern crate qstring;
 use qstring::QString;
 
 async fn index(req: HttpRequest) -> impl Responder {
-    HttpResponse::Ok().body("Hello world!")
+    HttpResponse::Ok().insert_header(("Server", "Kactus")).insert_header(("Content-Type", "text/plain")).body("Hello world!")
 }
 
 async fn gtfsrt(req: HttpRequest) -> impl Responder {
@@ -18,11 +19,13 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
 
     //HttpResponse::Ok().body(format!("Requested {}/{}", feed, category))
 
-    let data = con.get(format!("gtfsrt|{}|{}", feed, category)).await;
+    let data = con.get::<String, Vec<u8>>(format!("gtfsrt|{}|{}", feed, category));
 
     match data {
-        Ok(data) => HttpResponse::Ok().body(data),
-        Err(e) => HttpResponse::NotFound().body(format!("Error: {}", e)),
+        Ok(data) => HttpResponse::Ok().insert_header(("Content-Type", "application/x-google-protobuf"))
+        .insert_header(("Server", "Kactus"))
+        .body(data),
+        Err(e) => HttpResponse::NotFound().insert_header(("Content-Type", "text/plain")).insert_header(("Server", "Kactus")).body(format!("Error: {}", e)),
     }
 }
 
