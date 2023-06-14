@@ -4,7 +4,10 @@ extern crate qstring;
 use qstring::QString;
 
 async fn index(req: HttpRequest) -> impl Responder {
-    HttpResponse::Ok().insert_header(("Server", "Kactus")).insert_header(("Content-Type", "text/plain")).body("Hello world!")
+    HttpResponse::Ok()
+        .insert_header(("Server", "Kactus"))
+        .insert_header(("Content-Type", "text/plain"))
+        .body("Hello world!")
 }
 
 async fn gtfsrt(req: HttpRequest) -> impl Responder {
@@ -19,23 +22,63 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
         Some(feed) => {
             let category = qs.get("category");
 
-    //HttpResponse::Ok().body(format!("Requested {}/{}", feed, category))
+            //HttpResponse::Ok().body(format!("Requested {}/{}", feed, category))
 
-    match category {
-        Some(category) => {
-            let data = con.get::<String, Vec<u8>>(format!("gtfsrt|{}|{}", feed, category));
+            match category {
+                Some(category) => {
+                    let doesexist =
+                        con.exists::<String, bool>(format!("gtfsrtvalid|{}|{}", feed, category));
 
-            match data {
-                Ok(data) => HttpResponse::Ok().insert_header(("Content-Type", "application/x-google-protobuf"))
-                .insert_header(("Server", "Kactus"))
-                .body(data),
-                Err(e) => HttpResponse::NotFound().insert_header(("Content-Type", "text/plain")).insert_header(("Server", "Kactus")).body(format!("Error: {}\n", e)),
+                    match doesexist {
+                        Ok(data) => {
+                            if data == false {
+                                return HttpResponse::NotFound()
+                                    .insert_header(("Content-Type", "text/plain"))
+                                    .insert_header(("Server", "Kactus"))
+                                    .body("Error: Data Not Found\n");
+                            } else {
+                                let data = con.get::<String, Vec<u8>>(format!(
+                                    "gtfsrt|{}|{}",
+                                    feed, category
+                                ));
+
+                                match data {
+                                    Ok(data) => HttpResponse::Ok()
+                                        .insert_header((
+                                            "Content-Type",
+                                            "application/x-google-protobuf",
+                                        ))
+                                        .insert_header(("Server", "Kactus"))
+                                        .body(data),
+                                    Err(e) => HttpResponse::NotFound()
+                                        .insert_header(("Content-Type", "text/plain"))
+                                        .insert_header(("Server", "Kactus"))
+                                        .body(format!("Error: {}\n", e)),
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            return HttpResponse::NotFound()
+                                .insert_header(("Content-Type", "text/plain"))
+                                .insert_header(("Server", "Kactus"))
+                                .body(format!("Error in connecting to redis\n"))
+                        }
+                    }
+                }
+                None => {
+                    return HttpResponse::NotFound()
+                        .insert_header(("Content-Type", "text/plain"))
+                        .insert_header(("Server", "Kactus"))
+                        .body("Error: No category specified\n")
+                }
             }
-        },
-        None => return HttpResponse::NotFound().insert_header(("Content-Type", "text/plain")).insert_header(("Server", "Kactus")).body("Error: No category specified\n"),
-    }
-        },
-        None => return HttpResponse::NotFound().insert_header(("Content-Type", "text/plain")).insert_header(("Server", "Kactus")).body("Error: No feed specified\n"),
+        }
+        None => {
+            return HttpResponse::NotFound()
+                .insert_header(("Content-Type", "text/plain"))
+                .insert_header(("Server", "Kactus"))
+                .body("Error: No feed specified\n")
+        }
     }
 }
 
