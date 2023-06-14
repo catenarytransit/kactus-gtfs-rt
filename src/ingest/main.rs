@@ -107,68 +107,77 @@ async fn insertIntoUrl(category: &String, agency_info: &AgencyInfo) -> Result<()
     )
     .timeout(Duration::from_secs(5))
     .send()
-    .await
-    .unwrap();
+    .await;
 
-    println!("got response {}", &agency_info.onetrip);
+    match resp {
+        Ok(resp) => {
+            println!("got response {}", &agency_info.onetrip);
 
-    if (reqwest::Response::status(&resp) == reqwest::StatusCode::OK) {
-        let duration_gtfs_pull = start_gtfs_pull.elapsed();
-
-        println!(
-            "pull {} {} gtfs time is: {:?}",
-            &agency_info.onetrip, category, duration_gtfs_pull
-        );
-
-        //let bytes: Vec<u8> = resp.bytes().await.unwrap().to_vec();
-
-        match resp.bytes().await {
-            Ok(bytes_pre) => {
-                let bytes = bytes_pre.to_vec();
-
+            if (reqwest::Response::status(&resp) == reqwest::StatusCode::OK) {
+                let duration_gtfs_pull = start_gtfs_pull.elapsed();
+        
                 println!(
-                    "{} {} bytes: {}",
-                    agency_info.onetrip,
-                    category,
-                    bytes.len()
+                    "pull {} {} gtfs time is: {:?}",
+                    &agency_info.onetrip, category, duration_gtfs_pull
                 );
-
-                let _: () = con
-                    .set(
-                        format!("gtfsrt|{}|{}", agency_info.onetrip, category),
-                        bytes.to_vec(),
-                    )
-                    .unwrap();
-
-                let _: () = con
-                    .set(
-                        format!("gtfsrtvalid|{}|{}", agency_info.onetrip, category),
-                        true,
-                    )
-                    .unwrap();
+        
+                //let bytes: Vec<u8> = resp.bytes().await.unwrap().to_vec();
+        
+                match resp.bytes().await {
+                    Ok(bytes_pre) => {
+                        let bytes = bytes_pre.to_vec();
+        
+                        println!(
+                            "{} {} bytes: {}",
+                            agency_info.onetrip,
+                            category,
+                            bytes.len()
+                        );
+        
+                        let _: () = con
+                            .set(
+                                format!("gtfsrt|{}|{}", agency_info.onetrip, category),
+                                bytes.to_vec(),
+                            )
+                            .unwrap();
+        
+                        let _: () = con
+                            .set(
+                                format!("gtfsrtvalid|{}|{}", agency_info.onetrip, category),
+                                true,
+                            )
+                            .unwrap();
+                    }
+                    Err(e) => {
+                        println!("error getting bytes");
+                        return Err(e.into());
+                    }
+                }
+        
+                Ok(())
+            } else {
+                println!(
+                    "{}{}Not 200 response{}",
+                    color::Bg(color::Black),
+                    color::Fg(color::Red),
+                    style::Reset
+                );
+                println!(
+                    "{}{:?}{}",
+                    color::Fg(color::Red),
+                    resp.text().await.unwrap(),
+                    style::Reset
+                );
+                Err("Not 200 response".into())
             }
-            Err(e) => {
-                println!("error getting bytes");
-                return Err(e.into());
-            }
+        },
+        Err(e) => {
+            println!("error getting response");
+            return Err("Server Timed Out".into())
         }
-
-        Ok(())
-    } else {
-        println!(
-            "{}{}Not 200 response{}",
-            color::Bg(color::Black),
-            color::Fg(color::Red),
-            style::Reset
-        );
-        println!(
-            "{}{:?}{}",
-            color::Fg(color::Red),
-            resp.text().await.unwrap(),
-            style::Reset
-        );
-        Err("Not 200 response".into())
     }
+
+
 }
 
 #[tokio::main]
