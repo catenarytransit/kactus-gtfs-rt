@@ -22,7 +22,7 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
 
     match data {
         Ok(data) => HttpResponse::Ok().body(data),
-        Err(e) => HttpResponse::Ok().body(format!("Error: {}", e)),
+        Err(e) => HttpResponse::NotFound().body(format!("Error: {}", e)),
     }
 }
 
