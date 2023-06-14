@@ -173,6 +173,7 @@ async fn insertIntoUrl(category: &String, agency_info: &AgencyInfo) -> Result<()
         },
         Err(e) => {
             println!("error getting response");
+            println!("{:?}", e);
             return Err("Server Timed Out".into())
         }
     }
