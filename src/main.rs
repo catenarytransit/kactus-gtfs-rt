@@ -29,13 +29,13 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
                 Ok(data) => HttpResponse::Ok().insert_header(("Content-Type", "application/x-google-protobuf"))
                 .insert_header(("Server", "Kactus"))
                 .body(data),
-                Err(e) => HttpResponse::NotFound().insert_header(("Content-Type", "text/plain")).insert_header(("Server", "Kactus")).body(format!("Error: {}", e)),
+                Err(e) => HttpResponse::NotFound().insert_header(("Content-Type", "text/plain")).insert_header(("Server", "Kactus")).body(format!("Error: {}\n", e)),
             }
         },
-        None => return HttpResponse::NotFound().insert_header(("Content-Type", "text/plain")).insert_header(("Server", "Kactus")).body("Error: No category specified"),
+        None => return HttpResponse::NotFound().insert_header(("Content-Type", "text/plain")).insert_header(("Server", "Kactus")).body("Error: No category specified\n"),
     }
         },
-        None => return HttpResponse::NotFound().insert_header(("Content-Type", "text/plain")).insert_header(("Server", "Kactus")).body("Error: No feed specified"),
+        None => return HttpResponse::NotFound().insert_header(("Content-Type", "text/plain")).insert_header(("Server", "Kactus")).body("Error: No feed specified\n"),
     }
 }
 

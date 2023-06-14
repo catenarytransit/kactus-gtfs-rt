@@ -138,6 +138,11 @@ async fn insertIntoUrl(category: &String, agency_info: &AgencyInfo) -> Result<()
                         bytes.to_vec(),
                     )
                     .unwrap();
+
+                let _: () = con.set(
+                    format!("gtfsrtvalid|{}|{}", agency_info.onetrip, category),
+                    true
+                ).unwrap();
             }
             Err(e) => {
                 println!("error getting bytes");
