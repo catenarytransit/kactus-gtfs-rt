@@ -46,6 +46,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .route("/", web::get().to(index))
             .route("/gtfsrt/", web::get().to(gtfsrt))
+            .route("/gtfsrt", web::get().to(gtfsrt))
     })
     .workers(4);
 
