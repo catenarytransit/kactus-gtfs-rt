@@ -20,8 +20,19 @@ cargo run --bin ingest
 ```
 ### Hosted by Kyler
 
-Use Kactus hosted by Kyler's servers! (NOT READY YET, DO NOT USE YET)
-`api.kactus.kylerchin.com/`
+Use Kactus hosted by Kyler's servers! 
+`https://kactusapi.kylerchin.com/gtfsrt/?feed=[onestopid]&category=[category]`
+
+Onestop Feed IDs should be realtime feed ids from [transitland/transitland-atlas](https://github.com/transitland/transitland-atlas) aka https://transit.land/
+
+Valid categories are 
+- `vehicles` 
+- `trip_updates`
+- `alerts`
+
+The api returns 404 if the category for the feed doesn't exist.
+
+Example of valid url `https://kactusapi.kylerchin.com/gtfsrt/?feed=f-metro~losangeles~bus~rt&category=vehicles`
 
 ### urls.csv config
 If the auth_type is set to `url`, then any instance of `PASSWORD` in the urls will be replaced with the value of auth_password
