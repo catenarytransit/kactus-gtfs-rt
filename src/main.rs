@@ -13,19 +13,29 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
 
     let query_str = req.query_string(); // "name=ferret"
     let qs = QString::from(query_str);
-    let feed = qs.get("feed").unwrap();
+    let feed = qs.get("feed");
 
-    let category = qs.get("category").unwrap();
+    match feed {
+        Some(feed) => {
+            let category = qs.get("category");
 
     //HttpResponse::Ok().body(format!("Requested {}/{}", feed, category))
 
-    let data = con.get::<String, Vec<u8>>(format!("gtfsrt|{}|{}", feed, category));
+    match category {
+        Some(category) => {
+            let data = con.get::<String, Vec<u8>>(format!("gtfsrt|{}|{}", feed, category));
 
-    match data {
-        Ok(data) => HttpResponse::Ok().insert_header(("Content-Type", "application/x-google-protobuf"))
-        .insert_header(("Server", "Kactus"))
-        .body(data),
-        Err(e) => HttpResponse::NotFound().insert_header(("Content-Type", "text/plain")).insert_header(("Server", "Kactus")).body(format!("Error: {}", e)),
+            match data {
+                Ok(data) => HttpResponse::Ok().insert_header(("Content-Type", "application/x-google-protobuf"))
+                .insert_header(("Server", "Kactus"))
+                .body(data),
+                Err(e) => HttpResponse::NotFound().insert_header(("Content-Type", "text/plain")).insert_header(("Server", "Kactus")).body(format!("Error: {}", e)),
+            }
+        },
+        None => return HttpResponse::NotFound().insert_header(("Content-Type", "text/plain")).insert_header(("Server", "Kactus")).body("Error: No category specified"),
+    }
+        },
+        None => return HttpResponse::NotFound().insert_header(("Content-Type", "text/plain")).insert_header(("Server", "Kactus")).body("Error: No feed specified"),
     }
 }
 
