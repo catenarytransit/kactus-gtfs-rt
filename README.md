@@ -29,7 +29,7 @@ Onestop Feed IDs should be realtime feed ids from [transitland/transitland-atlas
 
 Valid categories are 
 - `vehicles` 
-- `trip_updates`
+- `trips`
 - `alerts`
 
 The api returns 404 if the category for the feed doesn't exist.

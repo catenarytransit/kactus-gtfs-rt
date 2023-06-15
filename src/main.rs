@@ -130,7 +130,7 @@ async fn gtfsrttimes(req: HttpRequest) -> impl Responder {
                 let feed = record.get(0).unwrap();  
 
                 let vehicles = con.get::<String, u64>(format!("gtfsrttime|{}|vehicles", feed));
-                let trips = con.get::<String, u64>(format!("gtfsrttime|{}|trip_updates", feed));
+                let trips = con.get::<String, u64>(format!("gtfsrttime|{}|trips", feed));
                 let alerts = con.get::<String, u64>(format!("gtfsrttime|{}|alerts", feed));
 
                 let vehicles = match vehicles {
