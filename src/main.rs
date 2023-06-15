@@ -86,7 +86,7 @@ async fn gtfsrttimes(req: HttpRequest) -> impl Responder {
     let redisclient = redis::Client::open("redis://127.0.0.1:6379/").unwrap();
     let mut con = redisclient.get_connection().unwrap();
 
-    
+    HttpResponse::Ok()
 }
 
 #[actix_web::main]
