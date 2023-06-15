@@ -10,6 +10,7 @@ use termion::{color, style};
 extern crate rand;
 use crate::rand::prelude::SliceRandom;
 
+
 extern crate csv;
 
 use csv::Reader;

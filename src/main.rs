@@ -3,9 +3,12 @@ use redis::Commands;
 extern crate qstring;
 use qstring::QString;
 
-use protobuf::Message;
-use protobuf::parse_from_bytes;
-use protobuf::error::ProtobufError;
+
+use protobuf::{CodedInputStream, Message};
+
+
+use kactus::gtfs_realtime;
+use kactus::gtfs_realtime::FeedMessage;
 
 async fn index(req: HttpRequest) -> impl Responder {
     HttpResponse::Ok()
@@ -13,6 +16,8 @@ async fn index(req: HttpRequest) -> impl Responder {
         .insert_header(("Content-Type", "text/plain"))
         .body("Hello world!")
 }
+
+
 
 async fn gtfsrt(req: HttpRequest) -> impl Responder {
     let redisclient = redis::Client::open("redis://127.0.0.1:6379/").unwrap();
@@ -47,13 +52,18 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
                                 ));
 
                                 match data {
-                                    Ok(data) => HttpResponse::Ok()
+                                    Ok(data) => {
+
+                                        let proto = parse_protobuf_message(&data);
+
+                                        HttpResponse::Ok()
                                         .insert_header((
                                             "Content-Type",
                                             "application/x-google-protobuf",
                                         ))
                                         .insert_header(("Server", "Kactus"))
-                                        .body(data),
+                                        .body(data)
+                                    },
                                     Err(e) => HttpResponse::NotFound()
                                         .insert_header(("Content-Type", "text/plain"))
                                         .insert_header(("Server", "Kactus"))
@@ -85,6 +95,11 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
         }
     }
 }
+
+fn parse_protobuf_message(bytes: &[u8])  -> Result<FeedMessage, protobuf::Error> {
+    return gtfs_realtime::FeedMessage::parse_from_bytes(bytes);
+}
+
 
 async fn gtfsrttimes(req: HttpRequest) -> impl Responder {
     let redisclient = redis::Client::open("redis://127.0.0.1:6379/").unwrap();
