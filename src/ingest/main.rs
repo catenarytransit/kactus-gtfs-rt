@@ -147,6 +147,16 @@ async fn insertIntoUrl(category: &String, agency_info: &AgencyInfo) -> Result<()
                                 true,
                             )
                             .unwrap();
+
+                            let _: () = con
+                            .set(
+                                format!("gtfsrttime|{}|{}", agency_info.onetrip, category),
+                                SystemTime::now()
+                                    .duration_since(UNIX_EPOCH)
+                                    .unwrap()
+                                    .as_millis().to_string(),
+                            )
+                            .unwrap();
                     }
                     Err(e) => {
                         println!("error getting bytes");
