@@ -2,6 +2,9 @@ use actix_web::{web, App, HttpRequest, HttpResponse, HttpServer, Responder};
 use redis::Commands;
 extern crate qstring;
 use qstring::QString;
+use std::io::BufReader;
+ use std::fs::File;
+ use csv::ReaderBuilder;
 
 use protobuf::{CodedInputStream, Message};
 
@@ -9,6 +12,17 @@ use kactus::gtfs_realtime;
 use kactus::gtfs_realtime::FeedMessage;
 
 use protobuf_json_mapping::print_to_string;
+
+use serde::{Serialize};
+
+#[derive(Serialize)]
+pub struct feedtimes {
+    feed: String,
+    vehicles: Option<u64>,
+    trips: Option<u64>,
+    alerts: Option<u64>
+  }
+
 
 async fn index(req: HttpRequest) -> impl Responder {
     HttpResponse::Ok()
@@ -98,7 +112,59 @@ async fn gtfsrttimes(req: HttpRequest) -> impl Responder {
     let redisclient = redis::Client::open("redis://127.0.0.1:6379/").unwrap();
     let mut con = redisclient.get_connection().unwrap();
 
-    HttpResponse::Ok()
+      // Open the CSV file
+      let file = File::open("urls.csv").unwrap();
+      let mut reader = csv::Reader::from_reader(BufReader::new(file));
+
+      let mut vecoftimes: Vec<feedtimes> = Vec::new();
+
+      // Iterate over each record (line) in the CSV file
+      for result in reader.records() {
+          // Unwrap the record
+          let record = result.unwrap();
+  
+          // Check the number of fields in the record
+          if record.len() > 0 {
+              // Print the first field of the record
+
+                let feed = record.get(0).unwrap();  
+
+                let vehicles = con.get::<String, u64>(format!("gtfsrttime|{}|vehicles", feed));
+                let trips = con.get::<String, u64>(format!("gtfsrttime|{}|trip_updates", feed));
+                let alerts = con.get::<String, u64>(format!("gtfsrttime|{}|alerts", feed));
+
+                let vehicles = match vehicles {
+                    Ok(data) => Some(data),
+                    Err(e) => None
+                };
+
+                let trips = match trips {
+                    Ok(data) => Some(data),
+                    Err(e) => None
+                };
+
+                let alerts = match alerts {
+                    Ok(data) => Some(data),
+                    Err(e) => None
+                };
+
+                let feedtime = feedtimes {
+                    feed: feed.to_string(),
+                    vehicles: vehicles,
+                    trips: trips,
+                    alerts: alerts
+                };
+
+                vecoftimes.push(feedtime);
+          }
+      }
+
+        let json = serde_json::to_string(&vecoftimes).unwrap();
+
+        HttpResponse::Ok()
+            .insert_header(("Content-Type", "application/json"))
+            .insert_header(("Server", "Kactus"))
+            .body(json)
 }
 
 async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
@@ -197,9 +263,10 @@ async fn main() -> std::io::Result<()> {
             .route("/", web::get().to(index))
             .route("/gtfsrt/", web::get().to(gtfsrt))
             .route("/gtfsrt", web::get().to(gtfsrt))
-            .route("/gtfsrtasjson/", web::get().to(gtfsrttojson))
-            .route("/gtfsrtasjson", web::get().to(gtfsrttojson))
+          //  .route("/gtfsrtasjson/", web::get().to(gtfsrttojson))
+         //   .route("/gtfsrtasjson", web::get().to(gtfsrttojson))
             .route("/gtfsrttimes", web::get().to(gtfsrttimes))
+            .route("/gtfsrttimes/", web::get().to(gtfsrttimes))
     })
     .workers(4);
 

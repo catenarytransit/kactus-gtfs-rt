@@ -36,12 +36,5 @@ The api returns 404 if the category for the feed doesn't exist.
 
 Example of valid url `https://kactusapi.kylerchin.com/gtfsrt/?feed=f-metro~losangeles~bus~rt&category=vehicles`
 
-You can also request data in json:
-`https://kactusapi.kylerchin.com/gtfsrt/?feed=[onestopid]&category=[category]`
-like this:
-`https://kactusapi.kylerchin.com/gtfsrtasjson/?feed=f-metro~losangeles~bus~rt&category=vehicles`
-
-The schema is an automated conversion from Protobuf, and won't ever change.
-
 ### urls.csv config
 If the auth_type is set to `url`, then any instance of `PASSWORD` in the urls will be replaced with the value of auth_password
