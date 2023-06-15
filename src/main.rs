@@ -63,7 +63,7 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
                                                 "application/json",
                                             ))
                                             .insert_header(("Server", "Kactus"))
-                                            .body(data)
+                                            .body(protojson)
                                             },
                                             Err(proto) => {
                                                 println!("Error parsing protobuf");
@@ -199,6 +199,7 @@ async fn main() -> std::io::Result<()> {
             .route("/gtfsrt/", web::get().to(gtfsrt))
             .route("/gtfsrt", web::get().to(gtfsrt))
             .route("/gtfsrtasjson/", web::get().to(gtfsrttojson))
+            .route("/gtfsrtasjson", web::get().to(gtfsrttojson))
             .route("/gtfsrttimes", web::get().to(gtfsrttimes))
     })
     .workers(4);
