@@ -164,7 +164,7 @@ async fn gtfsrttimes(req: HttpRequest) -> impl Responder {
         HttpResponse::Ok()
             .insert_header(("Content-Type", "application/json"))
             .insert_header(("Server", "Kactus"))
-            .body(format!("{}\n", json)
+            .body(format!("{}\n", json))
 }
 
 async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
