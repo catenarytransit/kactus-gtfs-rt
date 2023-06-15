@@ -3,6 +3,10 @@ use redis::Commands;
 extern crate qstring;
 use qstring::QString;
 
+use protobuf::Message;
+use protobuf::parse_from_bytes;
+use protobuf::error::ProtobufError;
+
 async fn index(req: HttpRequest) -> impl Responder {
     HttpResponse::Ok()
         .insert_header(("Server", "Kactus"))
@@ -89,6 +93,78 @@ async fn gtfsrttimes(req: HttpRequest) -> impl Responder {
     HttpResponse::Ok()
 }
 
+async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
+    let redisclient = redis::Client::open("redis://127.0.0.1:6379/").unwrap();
+    let mut con = redisclient.get_connection().unwrap();
+
+    let query_str = req.query_string(); // "name=ferret"
+    let qs = QString::from(query_str);
+    let feed = qs.get("feed");
+
+    match feed {
+        Some(feed) => {
+            let category = qs.get("category");
+
+            //HttpResponse::Ok().body(format!("Requested {}/{}", feed, category))
+
+            match category {
+                Some(category) => {
+                    let doesexist =
+                        con.exists::<String, bool>(format!("gtfsrtvalid|{}|{}", feed, category));
+
+                    match doesexist {
+                        Ok(data) => {
+                            if data == false {
+                                return HttpResponse::NotFound()
+                                    .insert_header(("Content-Type", "text/plain"))
+                                    .insert_header(("Server", "Kactus"))
+                                    .body("Error: Data Not Found\n");
+                            } else {
+                                let data = con.get::<String, Vec<u8>>(format!(
+                                    "gtfsrt|{}|{}",
+                                    feed, category
+                                ));
+
+                                match data {
+                                    Ok(data) => HttpResponse::Ok()
+                                        .insert_header((
+                                            "Content-Type",
+                                            "application/x-google-protobuf",
+                                        ))
+                                        .insert_header(("Server", "Kactus"))
+                                        .body(data),
+                                    Err(e) => HttpResponse::NotFound()
+                                        .insert_header(("Content-Type", "text/plain"))
+                                        .insert_header(("Server", "Kactus"))
+                                        .body(format!("Error: {}\n", e)),
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            return HttpResponse::NotFound()
+                                .insert_header(("Content-Type", "text/plain"))
+                                .insert_header(("Server", "Kactus"))
+                                .body(format!("Error in connecting to redis\n"))
+                        }
+                    }
+                }
+                None => {
+                    return HttpResponse::NotFound()
+                        .insert_header(("Content-Type", "text/plain"))
+                        .insert_header(("Server", "Kactus"))
+                        .body("Error: No category specified\n")
+                }
+            }
+        }
+        None => {
+            return HttpResponse::NotFound()
+                .insert_header(("Content-Type", "text/plain"))
+                .insert_header(("Server", "Kactus"))
+                .body("Error: No feed specified\n")
+        }
+    }
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     // Create a new HTTP server.
@@ -97,6 +173,7 @@ async fn main() -> std::io::Result<()> {
             .route("/", web::get().to(index))
             .route("/gtfsrt/", web::get().to(gtfsrt))
             .route("/gtfsrt", web::get().to(gtfsrt))
+            .route("/gtfsrtasjson/", web::get().to(gtfsrttojson))
             .route("/gtfsrttimes", web::get().to(gtfsrttimes))
     })
     .workers(4);
