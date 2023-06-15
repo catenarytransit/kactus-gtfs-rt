@@ -30,5 +30,5 @@ path = "src/test-cache-time/main.rs"
 
 
 [[bin]]
-name = "src/testm"
+name = "testm"
 path = "src/testm/testm.rs"
