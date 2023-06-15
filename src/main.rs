@@ -20,7 +20,10 @@ pub struct feedtimes {
     feed: String,
     vehicles: Option<u64>,
     trips: Option<u64>,
-    alerts: Option<u64>
+    alerts: Option<u64>,
+    has_vehicles: bool,
+    has_trips: bool,
+    has_alerts: bool,
   }
 
 
@@ -148,11 +151,20 @@ async fn gtfsrttimes(req: HttpRequest) -> impl Responder {
                     Err(e) => None
                 };
 
+                
+
+                let has_vehicles = !(record.get(1).unwrap().is_empty());
+                let has_trips = !(record.get(2).unwrap().is_empty());
+                let has_alerts = !(record.get(3).unwrap().is_empty());
+
                 let feedtime = feedtimes {
                     feed: feed.to_string(),
                     vehicles: vehicles,
                     trips: trips,
-                    alerts: alerts
+                    alerts: alerts,
+                    has_vehicles: has_vehicles,
+                    has_trips: has_trips,
+                    has_alerts: has_alerts
                 };
 
                 vecoftimes.push(feedtime);
