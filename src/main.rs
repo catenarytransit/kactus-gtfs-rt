@@ -3,12 +3,12 @@ use redis::Commands;
 extern crate qstring;
 use qstring::QString;
 
-
 use protobuf::{CodedInputStream, Message};
-
 
 use kactus::gtfs_realtime;
 use kactus::gtfs_realtime::FeedMessage;
+
+use protobuf_json_mapping::print_to_string;
 
 async fn index(req: HttpRequest) -> impl Responder {
     HttpResponse::Ok()
@@ -16,8 +16,6 @@ async fn index(req: HttpRequest) -> impl Responder {
         .insert_header(("Content-Type", "text/plain"))
         .body("Hello world!")
 }
-
-
 
 async fn gtfsrt(req: HttpRequest) -> impl Responder {
     let redisclient = redis::Client::open("redis://127.0.0.1:6379/").unwrap();
@@ -53,17 +51,30 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
 
                                 match data {
                                     Ok(data) => {
+                                        let proto  = parse_protobuf_message(&data);
 
-                                        let proto = parse_protobuf_message(&data);
+                                        match proto {
+                                            Ok(proto) => {
+                                                let protojson = print_to_string(&proto).unwrap();
 
-                                        HttpResponse::Ok()
-                                        .insert_header((
-                                            "Content-Type",
-                                            "application/x-google-protobuf",
-                                        ))
-                                        .insert_header(("Server", "Kactus"))
-                                        .body(data)
-                                    },
+                                                HttpResponse::Ok()
+                                            .insert_header((
+                                                "Content-Type",
+                                                "application/json",
+                                            ))
+                                            .insert_header(("Server", "Kactus"))
+                                            .body(data)
+                                            },
+                                            Err(proto) => {
+                                                println!("Error parsing protobuf");
+
+                                                HttpResponse::NotFound()
+                                                    .body("Parse protobuf failed")
+                                            }
+                                        }
+
+                                        
+                                    }
                                     Err(e) => HttpResponse::NotFound()
                                         .insert_header(("Content-Type", "text/plain"))
                                         .insert_header(("Server", "Kactus"))
@@ -96,10 +107,9 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
     }
 }
 
-fn parse_protobuf_message(bytes: &[u8])  -> Result<FeedMessage, protobuf::Error> {
+fn parse_protobuf_message(bytes: &[u8]) -> Result<FeedMessage, protobuf::Error> {
     return gtfs_realtime::FeedMessage::parse_from_bytes(bytes);
 }
-
 
 async fn gtfsrttimes(req: HttpRequest) -> impl Responder {
     let redisclient = redis::Client::open("redis://127.0.0.1:6379/").unwrap();

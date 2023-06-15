@@ -10,7 +10,6 @@ use termion::{color, style};
 extern crate rand;
 use crate::rand::prelude::SliceRandom;
 
-
 extern crate csv;
 
 use csv::Reader;
@@ -116,32 +115,32 @@ async fn insertIntoUrl(category: &String, agency_info: &AgencyInfo) -> Result<()
 
             if (reqwest::Response::status(&resp) == reqwest::StatusCode::OK) {
                 let duration_gtfs_pull = start_gtfs_pull.elapsed();
-        
+
                 println!(
                     "pull {} {} gtfs time is: {:?}",
                     &agency_info.onetrip, category, duration_gtfs_pull
                 );
-        
+
                 //let bytes: Vec<u8> = resp.bytes().await.unwrap().to_vec();
-        
+
                 match resp.bytes().await {
                     Ok(bytes_pre) => {
                         let bytes = bytes_pre.to_vec();
-        
+
                         println!(
                             "{} {} bytes: {}",
                             agency_info.onetrip,
                             category,
                             bytes.len()
                         );
-        
+
                         let _: () = con
                             .set(
                                 format!("gtfsrt|{}|{}", agency_info.onetrip, category),
                                 bytes.to_vec(),
                             )
                             .unwrap();
-        
+
                         let _: () = con
                             .set(
                                 format!("gtfsrtvalid|{}|{}", agency_info.onetrip, category),
@@ -149,13 +148,14 @@ async fn insertIntoUrl(category: &String, agency_info: &AgencyInfo) -> Result<()
                             )
                             .unwrap();
 
-                            let _: () = con
+                        let _: () = con
                             .set(
                                 format!("gtfsrttime|{}|{}", agency_info.onetrip, category),
                                 SystemTime::now()
                                     .duration_since(UNIX_EPOCH)
                                     .unwrap()
-                                    .as_millis().to_string(),
+                                    .as_millis()
+                                    .to_string(),
                             )
                             .unwrap();
                     }
@@ -164,7 +164,7 @@ async fn insertIntoUrl(category: &String, agency_info: &AgencyInfo) -> Result<()
                         return Err(e.into());
                     }
                 }
-        
+
                 Ok(())
             } else {
                 println!(
@@ -181,15 +181,13 @@ async fn insertIntoUrl(category: &String, agency_info: &AgencyInfo) -> Result<()
                 );
                 Err("Not 200 response".into())
             }
-        },
+        }
         Err(e) => {
             println!("error getting response");
             println!("{:?}", e);
-            return Err("Server Timed Out".into())
+            return Err("Server Timed Out".into());
         }
     }
-
-
 }
 
 #[tokio::main]

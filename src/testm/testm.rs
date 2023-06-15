@@ -1,7 +1,7 @@
+use csv::ReaderBuilder;
 use std::error::Error;
 use std::fs::File;
 use std::io::BufReader;
-use csv::ReaderBuilder;
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Open the CSV file
