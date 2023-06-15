@@ -85,7 +85,7 @@ async fn insertIntoUrl(category: &String, agency_info: &AgencyInfo) -> Result<()
         "vehicles" => {
             url = agency_info.realtime_vehicle_positions.clone();
         }
-        "trip_updates" => {
+        "trips" => {
             url = agency_info.realtime_trip_updates.clone();
         }
         "alerts" => {
@@ -298,7 +298,7 @@ async fn main() {
                     }
 
                     if !agency_info.realtime_trip_updates.is_empty() {
-                        let _ = insertIntoUrl(&("trip_updates".to_string()), &agency_info).await;
+                        let _ = insertIntoUrl(&("trips".to_string()), &agency_info).await;
                     }
 
                     if !agency_info.realtime_alerts.is_empty() {
