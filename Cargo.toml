@@ -11,13 +11,10 @@ futures = "0.3.28"
 reqwest = "0.11"
 redis = "0.23"
 csv = "1.2"
-hyper = { version = "1.0.0-rc.3", features = ["full", "http2", "server"] }
+hyper = { version = "1.0.0-rc.3", features = ["full"] }
 http-body-util = "0.1.0-rc.2"
 termion = "*"
 farmhash = "1.1"
-rand = "0.8"
-actix-web = "4"
-qstring = "0.7"
 
 [[bin]]
 name = "server"
@@ -30,3 +27,8 @@ path = "src/ingest/main.rs"
 [[bin]]
 name = "testcachetime"
 path = "src/test-cache-time/main.rs"
+
+
+[[bin]]
+name = "src/testm"
+path = "src/testm/testm.rs"
