@@ -50,31 +50,14 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
                                 ));
 
                                 match data {
-                                    Ok(data) => {
-                                        let proto  = parse_protobuf_message(&data);
-
-                                        match proto {
-                                            Ok(proto) => {
-                                                let protojson = print_to_string(&proto).unwrap();
-
-                                                HttpResponse::Ok()
-                                            .insert_header((
-                                                "Content-Type",
-                                                "application/json",
-                                            ))
-                                            .insert_header(("Server", "Kactus"))
-                                            .body(protojson)
-                                            },
-                                            Err(proto) => {
-                                                println!("Error parsing protobuf");
-
-                                                HttpResponse::NotFound()
-                                                    .body("Parse protobuf failed")
-                                            }
-                                        }
-
-                                        
-                                    }
+                                    Ok(data) => 
+                                        HttpResponse::Ok()
+                                        .insert_header((
+                                            "Content-Type",
+                                            "application/x-google-protobuf",
+                                        ))
+                                        .insert_header(("Server", "Kactus"))
+                                        .body(data),
                                     Err(e) => HttpResponse::NotFound()
                                         .insert_header(("Content-Type", "text/plain"))
                                         .insert_header(("Server", "Kactus"))
@@ -151,13 +134,29 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
                                 ));
 
                                 match data {
-                                    Ok(data) => HttpResponse::Ok()
-                                        .insert_header((
-                                            "Content-Type",
-                                            "application/x-google-protobuf",
-                                        ))
-                                        .insert_header(("Server", "Kactus"))
-                                        .body(data),
+                                    Ok(data) => {
+                                        let proto  = parse_protobuf_message(&data);
+
+                                        match proto {
+                                            Ok(proto) => {
+                                                let protojson = print_to_string(&proto).unwrap();
+
+                                                HttpResponse::Ok()
+                                            .insert_header((
+                                                "Content-Type",
+                                                "application/json",
+                                            ))
+                                            .insert_header(("Server", "Kactus"))
+                                            .body(protojson)
+                                            },
+                                            Err(proto) => {
+                                                println!("Error parsing protobuf");
+
+                                                HttpResponse::NotFound()
+                                                    .body("Parse protobuf failed")
+                                            }
+                                        }
+                                    },
                                     Err(e) => HttpResponse::NotFound()
                                         .insert_header(("Content-Type", "text/plain"))
                                         .insert_header(("Server", "Kactus"))
