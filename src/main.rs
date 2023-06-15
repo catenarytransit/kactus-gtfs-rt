@@ -82,6 +82,13 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
     }
 }
 
+async fn gtfsrttimes(req: HttpRequest) -> impl Responder {
+    let redisclient = redis::Client::open("redis://127.0.0.1:6379/").unwrap();
+    let mut con = redisclient.get_connection().unwrap();
+
+    
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     // Create a new HTTP server.
@@ -90,6 +97,7 @@ async fn main() -> std::io::Result<()> {
             .route("/", web::get().to(index))
             .route("/gtfsrt/", web::get().to(gtfsrt))
             .route("/gtfsrt", web::get().to(gtfsrt))
+            .route("/gtfsrttimes", web::get().to(gtfsrttimes))
     })
     .workers(4);
 
