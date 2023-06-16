@@ -14,5 +14,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+    - name: Install Dependencies
+      run: apt install protobuf-compiler redis
     - name: Build
       run: cargo build --verbose
