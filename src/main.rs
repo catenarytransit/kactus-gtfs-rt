@@ -31,6 +31,7 @@ async fn index(req: HttpRequest) -> impl Responder {
     HttpResponse::Ok()
         .insert_header(("Server", "Kactus"))
         .insert_header(("Content-Type", "text/plain"))
+        .insert_header(("Access-Control-Allow-Origin", "*"))
         .body("Hello world!")
 }
 
@@ -59,6 +60,7 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
                                 return HttpResponse::NotFound()
                                     .insert_header(("Content-Type", "text/plain"))
                                     .insert_header(("Server", "Kactus"))
+        .insert_header(("Access-Control-Allow-Origin", "*"))
                                     .body("Error: Data Not Found\n");
                             } else {
                                 let data = con.get::<String, Vec<u8>>(format!(
@@ -74,10 +76,14 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
                                             "application/x-google-protobuf",
                                         ))
                                         .insert_header(("Server", "Kactus"))
+                                        
+        .insert_header(("Access-Control-Allow-Origin", "*"))
                                         .body(data),
                                     Err(e) => HttpResponse::NotFound()
                                         .insert_header(("Content-Type", "text/plain"))
                                         .insert_header(("Server", "Kactus"))
+                                        
+        .insert_header(("Access-Control-Allow-Origin", "*"))
                                         .body(format!("Error: {}\n", e)),
                                 }
                             }
@@ -86,6 +92,7 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
                             return HttpResponse::NotFound()
                                 .insert_header(("Content-Type", "text/plain"))
                                 .insert_header(("Server", "Kactus"))
+                                .insert_header(("Access-Control-Allow-Origin", "*"))
                                 .body(format!("Error in connecting to redis\n"))
                         }
                     }
@@ -94,6 +101,7 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
                     return HttpResponse::NotFound()
                         .insert_header(("Content-Type", "text/plain"))
                         .insert_header(("Server", "Kactus"))
+                        .insert_header(("Access-Control-Allow-Origin", "*"))
                         .body("Error: No category specified\n")
                 }
             }
@@ -101,6 +109,7 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
         None => {
             return HttpResponse::NotFound()
                 .insert_header(("Content-Type", "text/plain"))
+                .insert_header(("Access-Control-Allow-Origin", "*"))
                 .insert_header(("Server", "Kactus"))
                 .body("Error: No feed specified\n")
         }
@@ -180,6 +189,7 @@ async fn gtfsrttimes(req: HttpRequest) -> impl Responder {
         HttpResponse::Ok()
             .insert_header(("Content-Type", "application/json"))
             .insert_header(("Server", "Kactus"))
+            .insert_header(("Access-Control-Allow-Origin", "*"))
             .body(format!("{}\n", json))
 }
 
@@ -207,6 +217,7 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
                             if data == false {
                                 return HttpResponse::NotFound()
                                     .insert_header(("Content-Type", "text/plain"))
+                                    .insert_header(("Access-Control-Allow-Origin", "*"))
                                     .insert_header(("Server", "Kactus"))
                                     .body("Error: Data Not Found\n");
                             } else {
@@ -229,6 +240,7 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
                                                 "application/json",
                                             ))
                                             .insert_header(("Server", "Kactus"))
+                                            .insert_header(("Access-Control-Allow-Origin", "*"))
                                             .body(protojson)
                                             },
                                             Err(proto) => {
@@ -242,6 +254,7 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
                                     Err(e) => HttpResponse::NotFound()
                                         .insert_header(("Content-Type", "text/plain"))
                                         .insert_header(("Server", "Kactus"))
+                                        .insert_header(("Access-Control-Allow-Origin", "*"))
                                         .body(format!("Error: {}\n", e)),
                                 }
                             }
@@ -250,6 +263,7 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
                             return HttpResponse::NotFound()
                                 .insert_header(("Content-Type", "text/plain"))
                                 .insert_header(("Server", "Kactus"))
+                                .insert_header(("Access-Control-Allow-Origin", "*"))
                                 .body(format!("Error in connecting to redis\n"))
                         }
                     }
@@ -258,6 +272,7 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
                     return HttpResponse::NotFound()
                         .insert_header(("Content-Type", "text/plain"))
                         .insert_header(("Server", "Kactus"))
+                        .insert_header(("Access-Control-Allow-Origin", "*"))
                         .body("Error: No category specified\n")
                 }
             }
@@ -266,6 +281,8 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
             return HttpResponse::NotFound()
                 .insert_header(("Content-Type", "text/plain"))
                 .insert_header(("Server", "Kactus"))
+                
+                .insert_header(("Access-Control-Allow-Origin", "*"))
                 .body("Error: No feed specified\n")
         }
     }
