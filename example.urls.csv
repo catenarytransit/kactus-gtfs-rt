@@ -20,5 +20,5 @@ f-montebello~bus~rt,https://mbl.rideralerts.com/InfoPoint/GTFS-Realtime.ashx?Typ
 f-wmata~bus~rt,https://api.wmata.com/gtfs/bus-gtfsrt-vehiclepositions.pb,https://api.wmata.com/gtfs/bus-gtfsrt-tripupdates.pb,https://api.wmata.com/gtfs/bus-gtfsrt-alerts.pb,true,header,api_key,EXAMPLEKEY,6,
 f-wmata~rail~rt,https://api.wmata.com/gtfs/rail-gtfsrt-vehiclepositions.pb,https://api.wmata.com/gtfs/rail-gtfsrt-tripupdates.pb,https://api.wmata.com/gtfs/rail-gtfsrt-alerts.pb,true,header,api_key,EXAMPLEKEY,6,
 f-northcountrytransitdistrict~rt,https://api.goswift.ly/real-time/nctd/gtfs-rt-vehicle-positions,https://api.goswift.ly/real-time/nctd/gtfs-rt-trip-updates,,true,header,Authorization,EXAMPLEKEY,10,
-f-ripta~rt,https://api.goswift.ly/real-time/nctd/gtfs-rt-vehicle-positions,https://api.goswift.ly/real-time/nctd/gtfs-rt-trip-updates,,false,,,,1,
+f-ripta~rt,http://realtime.ripta.com:81/api/vehiclepositions?format=gtfs.proto,http://realtime.ripta.com:81/api/tripupdates?format=gtfs.proto,http://realtime.ripta.com:81/api/servicealerts?format=gtfs.proto,false,,,,1,
 f-rtddenver~rt,https://www.rtd-denver.com/files/gtfs-rt/VehiclePosition.pb,https://www.rtd-denver.com/files/gtfs-rt/TripUpdate.pb,https://www.rtd-denver.com/files/gtfs-rt/Alerts.pb,false,,,,1,
