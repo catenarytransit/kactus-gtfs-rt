@@ -5,6 +5,7 @@ use qstring::QString;
 use std::io::BufReader;
  use std::fs::File;
  use csv::ReaderBuilder;
+ use std::time::Instant;
 
 use protobuf::{CodedInputStream, Message};
 
@@ -25,7 +26,6 @@ pub struct feedtimes {
     has_trips: bool,
     has_alerts: bool,
   }
-
 
 async fn index(req: HttpRequest) -> impl Responder {
     HttpResponse::Ok()
@@ -121,6 +121,8 @@ async fn gtfsrttimes(req: HttpRequest) -> impl Responder {
 
       let mut vecoftimes: Vec<feedtimes> = Vec::new();
 
+        let startiterator = Instant::now();
+
       // Iterate over each record (line) in the CSV file
       for result in reader.records() {
           // Unwrap the record
@@ -151,8 +153,6 @@ async fn gtfsrttimes(req: HttpRequest) -> impl Responder {
                     Err(e) => None
                 };
 
-                
-
                 let has_vehicles = !(record.get(1).unwrap().is_empty());
                 let has_trips = !(record.get(2).unwrap().is_empty());
                 let has_alerts = !(record.get(3).unwrap().is_empty());
@@ -170,6 +170,10 @@ async fn gtfsrttimes(req: HttpRequest) -> impl Responder {
                 vecoftimes.push(feedtime);
           }
       }
+
+      let finishiterator = startiterator.elapsed();
+
+      println!("reading file took {:#?}", finishiterator);
 
         let json = serde_json::to_string(&vecoftimes).unwrap();
 
