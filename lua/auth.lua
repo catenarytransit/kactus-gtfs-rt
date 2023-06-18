@@ -1,3 +1,4 @@
+--requires https://luvit.io/
 --writes to a log which gtfs-rt feeds need auth
 local http = require("socket.http")
 local csv = require("csv")
