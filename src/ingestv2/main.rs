@@ -252,7 +252,7 @@ async fn main() {
                                 }
                             } else {
                                 println!(
-                                    "{} {} error: {}",
+                                    "{} {} HTTP error: {}",
                                     &reqquery.onetrip,
                                     &reqquery.category,
                                     resp.status()
@@ -266,7 +266,7 @@ async fn main() {
                 }
             }
         }))
-        .buffer_unordered(50)
+        .buffer_unordered(500)
         .collect::<Vec<()>>();
         println!("Starting loop: {} fetches", &reqquery_vec.len());
         fetches.await;
