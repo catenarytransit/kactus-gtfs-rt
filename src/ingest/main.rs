@@ -178,12 +178,7 @@ async fn insertIntoUrl(category: &String, agency_info: &AgencyInfo) -> Result<()
 
                 match resperr {
                     Ok(resperr) => {
-                        println!(
-                            "{}{:?}{}",
-                            color::Fg(color::Red),
-                            resperr,
-                            style::Reset
-                        );
+                        println!("{}{:?}{}", color::Fg(color::Red), resperr, style::Reset);
                     }
                     Err(e) => {
                         println!("error getting response");
@@ -191,7 +186,6 @@ async fn insertIntoUrl(category: &String, agency_info: &AgencyInfo) -> Result<()
                     }
                 }
 
-                
                 Err("Not 200 response".into())
             }
         }
@@ -215,7 +209,6 @@ async fn main() {
     for record in reader.records() {
         match record {
             Ok(record) => {
-
                 let agency_info = AgencyInfo {
                     onetrip: record[0].to_string(),
                     realtime_vehicle_positions: record[1].to_string(),

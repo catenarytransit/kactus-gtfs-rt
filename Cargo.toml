@@ -41,3 +41,7 @@ path = "src/test-cache-time/main.rs"
 [[bin]]
 name = "testm"
 path = "src/testm/testm.rs"
+
+[[bin]]
+name = "ingestv2"
+path = "src/ingestv2/main.rs"
