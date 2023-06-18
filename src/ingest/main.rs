@@ -173,12 +173,19 @@ async fn insertIntoUrl(category: &String, agency_info: &AgencyInfo) -> Result<()
                     color::Fg(color::Red),
                     style::Reset
                 );
-                println!(
-                    "{}{:?}{}",
-                    color::Fg(color::Red),
-                    resp.text().await.unwrap(),
-                    style::Reset
-                );
+
+                let resperr = resp.text().await;
+
+                match resperr {
+                    Ok(resperr) => {
+                        println!("{}{:?}{}", color::Fg(color::Red), resperr, style::Reset);
+                    }
+                    Err(e) => {
+                        println!("error getting response");
+                        println!("{:?}", e);
+                    }
+                }
+
                 Err("Not 200 response".into())
             }
         }
@@ -200,22 +207,28 @@ async fn main() {
     let mut agency_infos: Vec<AgencyInfo> = Vec::new();
 
     for record in reader.records() {
-        let record = record.unwrap();
+        match record {
+            Ok(record) => {
+                let agency_info = AgencyInfo {
+                    onetrip: record[0].to_string(),
+                    realtime_vehicle_positions: record[1].to_string(),
+                    realtime_trip_updates: record[2].to_string(),
+                    realtime_alerts: record[3].to_string(),
+                    has_auth: record[4].parse().unwrap(),
+                    auth_type: record[5].to_string(),
+                    auth_header: record[6].to_string(),
+                    auth_password: record[7].to_string(),
+                    fetch_interval: record[8].parse().unwrap(),
+                    multiauth: convert_multiauth_to_vec(&(record[9].to_string())),
+                };
 
-        let agency_info = AgencyInfo {
-            onetrip: record[0].to_string(),
-            realtime_vehicle_positions: record[1].to_string(),
-            realtime_trip_updates: record[2].to_string(),
-            realtime_alerts: record[3].to_string(),
-            has_auth: record[4].parse().unwrap(),
-            auth_type: record[5].to_string(),
-            auth_header: record[6].to_string(),
-            auth_password: record[7].to_string(),
-            fetch_interval: record[8].parse().unwrap(),
-            multiauth: convert_multiauth_to_vec(&(record[9].to_string())),
-        };
-
-        agency_infos.push(agency_info);
+                agency_infos.push(agency_info);
+            }
+            Err(e) => {
+                println!("error reading csv");
+                println!("{:?}", e);
+            }
+        }
     }
 
     let mut lastloop: std::time::Instant;
