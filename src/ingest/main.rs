@@ -202,7 +202,6 @@ async fn main() {
     for record in reader.records() {
         match record {
             Ok(record) => {
-                let record = record.unwrap();
 
                 let agency_info = AgencyInfo {
                     onetrip: record[0].to_string(),
