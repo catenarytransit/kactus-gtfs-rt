@@ -260,7 +260,7 @@ async fn main() {
                             }
                         }
                         Err(e) => {
-                            println!("error fetching url: {:?}", e);
+                            println!("{}error fetching url: {} {:?}{}", color::Fg(color::Red), &reqquery.url, e.source().unwrap(), style::Reset);
                         }
                     }
                 }
