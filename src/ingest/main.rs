@@ -173,12 +173,25 @@ async fn insertIntoUrl(category: &String, agency_info: &AgencyInfo) -> Result<()
                     color::Fg(color::Red),
                     style::Reset
                 );
-                println!(
-                    "{}{:?}{}",
-                    color::Fg(color::Red),
-                    resp.text().await.unwrap(),
-                    style::Reset
-                );
+
+                let resperr = resp.text().await;
+
+                match resperr {
+                    Ok(resperr) => {
+                        println!(
+                            "{}{:?}{}",
+                            color::Fg(color::Red),
+                            resperr,
+                            style::Reset
+                        );
+                    }
+                    Err(e) => {
+                        println!("error getting response");
+                        println!("{:?}", e);
+                    }
+                }
+
+                
                 Err("Not 200 response".into())
             }
         }
