@@ -12,10 +12,10 @@ function loadJsonFile(filePath)
         return myTable
     end
 end
-
-local directoryPath = "/path/to/transitland-atlas/feeds"
-
-print("feed,vehicles_url,trips_url,alerts_url,isauth,isswiftly")
+--make sure to change this before running
+local directoryPath = "/home/lolpro11/Documents/transitland-atlas/feeds/"
+os.execute("bash -c 'cd "..directoryPath.."; git pull &> /dev/null'")
+print("onestop,realtime_vehicle_positions,realtime_trip_updates,realtime_alerts,has_auth,auth_type,auth_header,auth_password,fetch_interval,multiauth")
 local file_list = io.popen("ls -1 "..directoryPath.."/*.json")
 local output = file_list:read("*all")
 file_list:close()
@@ -31,7 +31,7 @@ for i=1, #json_files do
         local data_feed = jsonData.feeds[i]
         if data_feed.spec == "gtfs-rt" and data_feed.urls ~= nil then
             output_str = tostring(data_feed.id)
-            for i=0, #data_feed.urls do
+            for i=0, #data_feed. urls do
                 if data_feed.urls.realtime_vehicle_positions ~= nil then
                     output_str = output_str..","..data_feed.urls.realtime_vehicle_positions
                 else
@@ -49,18 +49,28 @@ for i=1, #json_files do
                 end
             end
             if data_feed.authorization ~= nil then
+                --uncomment to keep vendors with auth
+                goto done
                 output_str = output_str..",true"
+                if data_feed.authorization.type ~= nil then
+                    output_str = output_str..","..data_feed.authorization.type
+                end
+                if data_feed.authorization.param_name ~= nil then
+                    output_str = output_str..","..data_feed.authorization.param_name
+                end
             else
-                output_str = output_str..",false"
+                output_str = output_str..",false,,"
             end
-            if data_feed.license ~= nil and data_feed.license.url == "https://www.goswift.ly/api-license" then
-                output_str = output_str..",true"
-            else
-                output_str = output_str..",false"
-            end
+            --auth_password
+            output_str = output_str..","
+            --fetch_interval
+            output_str = output_str..",0.1"
+            --multiauth
+             output_str = output_str..","
         end
         if output_str ~= "" then
             print(output_str)
         end
+        ::done::
     end
 end

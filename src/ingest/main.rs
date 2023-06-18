@@ -317,7 +317,7 @@ async fn main() {
                 }
             }
         }))
-        .buffer_unordered(50)
+        .buffer_unordered(100)
         .collect::<Vec<()>>();
         println!("Waiting...");
         fetches.await;
