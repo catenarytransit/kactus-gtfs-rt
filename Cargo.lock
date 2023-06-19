@@ -243,6 +243,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9c7d0618f0e0b7e8ff11427422b64564d5fb0be1940354bfe2e0529b18a9d9b8"
 
 [[package]]
+name = "arguments"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8d8b6590432235ca848cccae06397e642a4e984b37c546dc1b0dcb056b9dcd23"
+dependencies = [
+ "options",
+]
+
+[[package]]
 name = "autocfg"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -906,6 +915,7 @@ name = "kactus"
 version = "0.1.0"
 dependencies = [
  "actix-web",
+ "arguments",
  "csv",
  "farmhash",
  "futures",
@@ -1105,6 +1115,12 @@ dependencies = [
  "pkg-config",
  "vcpkg",
 ]
+
+[[package]]
+name = "options"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "61a1c9b12c453182754f3126c5689324c7214265de2df79917b59de87547a916"
 
 [[package]]
 name = "parking_lot"

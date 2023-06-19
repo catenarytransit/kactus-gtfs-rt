@@ -49,7 +49,28 @@ struct Reqquery {
 async fn main() {
     let mut lastloop = Instant::now();
 
-    let file = File::open("urls.csv").unwrap();
+    let arguments = std::env::args();
+let arguments = arguments::parse(arguments).unwrap();
+
+
+let filenametouse = match arguments.get::<String>("urls") {
+    Some(filename) => 
+        filename,
+    None => 
+        String::from("urls.csv")
+    
+};
+
+
+let threadcount = match arguments.get::<usize>("threads") {
+    Some(threadcount) => 
+    threadcount,
+    None => 
+        500
+    
+};
+
+    let file = File::open(filenametouse).unwrap();
     let mut reader = csv::Reader::from_reader(BufReader::new(file));
 
     let mut agencies: Vec<AgencyInfo> = Vec::new();
@@ -266,7 +287,7 @@ async fn main() {
                 }
             }
         }))
-        .buffer_unordered(500)
+        .buffer_unordered(threadcount)
         .collect::<Vec<()>>();
         println!("Starting loop: {} fetches", &reqquery_vec.len());
         fetches.await;
