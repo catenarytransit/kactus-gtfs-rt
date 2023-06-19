@@ -1,3 +1,4 @@
 /target
 urls.csv
 *.log
+*urls.csv
