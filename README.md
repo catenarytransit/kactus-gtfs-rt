@@ -45,3 +45,9 @@ you can specify the urls file to use, but by default, it is `urls.csv`
 ```bash
 cargo run --bin ingestv2 -- --urls public-urls.csv
 ```
+
+you can add the `threads` parameter
+
+```bash
+cargo run --bin ingestv2 -- --urls public-urls.csv --threads 10
+```
