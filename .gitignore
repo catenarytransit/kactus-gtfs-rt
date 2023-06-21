@@ -2,3 +2,4 @@
 urls.csv
 *.log
 *urls.csv
+!public-urls.csv
