@@ -54,7 +54,9 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
                     let doesexist = con.exists::<String, u64>(format!("gtfsrttime|{}|{}", feed, category));
 
                     match doesexist {
-                        Ok(data) => {
+                        Ok(existdata) => {
+
+                            
                            
                                 let data = con.get::<String, Vec<u8>>(format!(
                                     "gtfsrt|{}|{}",
@@ -70,11 +72,14 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
                                         .insert_header(("Server", "Kactus"))
                                         .insert_header(("Access-Control-Allow-Origin", "*"))
                                         .body(data),
-                                    Err(e) => HttpResponse::NotFound()
+                                    Err(e) => {
+                                        println!("Error: {:?}", e);
+                                        HttpResponse::NotFound()
                                         .insert_header(("Content-Type", "text/plain"))
                                         .insert_header(("Server", "Kactus"))
                                         .insert_header(("Access-Control-Allow-Origin", "*"))
-                                        .body(format!("Error: {}\n", e)),
+                                        .body(format!("Error: {}\n", e))
+                                    },
                                 }
                             
                         }
