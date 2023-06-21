@@ -51,16 +51,14 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
 
             match category {
                 Some(category) => {
-                    let doesexist = con.exists::<String, u64>(format!("gtfsrttime|{}|{}", feed, category));
+                    let doesexist = con.exists::<String, u64>(format!("gtfsrttime|{}|{}", &feed, &category));
 
                     match doesexist {
                         Ok(existdata) => {
-
-                            
                            
                                 let data = con.get::<String, Vec<u8>>(format!(
                                     "gtfsrt|{}|{}",
-                                    feed, category
+                                    &feed, &category
                                 ));
 
                                 match data {
