@@ -38,3 +38,10 @@ Example of valid url `https://kactusapi.kylerchin.com/gtfsrt/?feed=f-metro~losan
 
 ### urls.csv config
 If the auth_type is set to `url`, then any instance of `PASSWORD` in the urls will be replaced with the value of auth_password
+
+### options for ingest file
+
+you can specify the urls file to use, but by default, it is `urls.csv`
+```bash
+cargo run --bin ingestv2 -- --urls public-urls.csv
+```
