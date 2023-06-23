@@ -24,20 +24,15 @@ gtfs-rt = "0.3"
 serde_derive = "*"
 serde_json = "*"
 serde = "*"
-arguments="0.7"
+arguments = "0.7"
 
 [[bin]]
 name = "server"
 path = "src/main.rs"
 
 [[bin]]
-name = "ingest"
-path = "src/ingest/main.rs"
-
-[[bin]]
 name = "testcachetime"
 path = "src/test-cache-time/main.rs"
-
 
 [[bin]]
 name = "testm"
