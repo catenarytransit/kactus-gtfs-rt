@@ -159,7 +159,14 @@ async fn gtfsrttimes(req: HttpRequest) -> impl Responder {
                 vecoftimes.push(feedtime);
             }
         }
-        Err(e) => None,
+        Err(e) => {
+            println!("Error: {:?}", e);
+            return HttpResponse::InternalServerError()
+                .insert_header(("Content-Type", "text/plain"))
+                .insert_header(("Server", "Kactus"))
+                .insert_header(("Access-Control-Allow-Origin", "*"))
+                .body(format!("Error: {}\n", e));
+        }
     };
 
     let finishiterator = startiterator.elapsed();
