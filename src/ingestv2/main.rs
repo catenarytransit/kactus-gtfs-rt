@@ -50,25 +50,17 @@ async fn main() {
     let mut lastloop = Instant::now();
 
     let arguments = std::env::args();
-let arguments = arguments::parse(arguments).unwrap();
+    let arguments = arguments::parse(arguments).unwrap();
 
+    let filenametouse = match arguments.get::<String>("urls") {
+        Some(filename) => filename,
+        None => String::from("urls.csv"),
+    };
 
-let filenametouse = match arguments.get::<String>("urls") {
-    Some(filename) => 
-        filename,
-    None => 
-        String::from("urls.csv")
-    
-};
-
-
-let threadcount = match arguments.get::<usize>("threads") {
-    Some(threadcount) => 
-    threadcount,
-    None => 
-        500
-    
-};
+    let threadcount = match arguments.get::<usize>("threads") {
+        Some(threadcount) => threadcount,
+        None => 500,
+    };
 
     let file = File::open(filenametouse).unwrap();
     let mut reader = csv::Reader::from_reader(BufReader::new(file));
@@ -258,6 +250,20 @@ let threadcount = match arguments.get::<usize>("threads") {
                                                 format!(
                                                     "gtfsrttime|{}|{}",
                                                     &reqquery.onetrip, &reqquery.category
+                                                ),
+                                                SystemTime::now()
+                                                    .duration_since(UNIX_EPOCH)
+                                                    .unwrap()
+                                                    .as_millis()
+                                                    .to_string(),
+                                            )
+                                            .unwrap();
+
+                                        let _: () = con
+                                            .set(
+                                                format!(
+                                                    "gtfsrtexists|{}",
+                                                    &reqquery.onetrip
                                                 ),
                                                 SystemTime::now()
                                                     .duration_since(UNIX_EPOCH)

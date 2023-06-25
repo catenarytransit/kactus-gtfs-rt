@@ -22,9 +22,10 @@ pub struct feedtimes {
     vehicles: Option<u64>,
     trips: Option<u64>,
     alerts: Option<u64>,
+    /*
     has_vehicles: bool,
     has_trips: bool,
-    has_alerts: bool,
+    has_alerts: bool,*/
 }
 
 async fn index(req: HttpRequest) -> impl Responder {
@@ -51,35 +52,32 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
 
             match category {
                 Some(category) => {
-                    let doesexist = con.get::<String, u64>(format!("gtfsrttime|{}|{}", &feed, &category));
+                    let doesexist =
+                        con.get::<String, u64>(format!("gtfsrttime|{}|{}", &feed, &category));
 
                     match doesexist {
                         Ok(existdata) => {
-                           
-                                let data = con.get::<String, Vec<u8>>(format!(
-                                    "gtfsrt|{}|{}",
-                                    &feed, &category
-                                ));
+                            let data = con
+                                .get::<String, Vec<u8>>(format!("gtfsrt|{}|{}", &feed, &category));
 
-                                match data {
-                                    Ok(data) => HttpResponse::Ok()
-                                        .insert_header((
-                                            "Content-Type",
-                                            "application/x-google-protobuf",
-                                        ))
-                                        .insert_header(("Server", "Kactus"))
-                                        .insert_header(("Access-Control-Allow-Origin", "*"))
-                                        .body(data),
-                                    Err(e) => {
-                                        println!("Error: {:?}", e);
-                                        HttpResponse::NotFound()
+                            match data {
+                                Ok(data) => HttpResponse::Ok()
+                                    .insert_header((
+                                        "Content-Type",
+                                        "application/x-google-protobuf",
+                                    ))
+                                    .insert_header(("Server", "Kactus"))
+                                    .insert_header(("Access-Control-Allow-Origin", "*"))
+                                    .body(data),
+                                Err(e) => {
+                                    println!("Error: {:?}", e);
+                                    HttpResponse::NotFound()
                                         .insert_header(("Content-Type", "text/plain"))
                                         .insert_header(("Server", "Kactus"))
                                         .insert_header(("Access-Control-Allow-Origin", "*"))
                                         .body(format!("Error: {}\n", e))
-                                    },
                                 }
-                            
+                            }
                         }
                         Err(e) => {
                             return HttpResponse::NotFound()
@@ -117,61 +115,52 @@ async fn gtfsrttimes(req: HttpRequest) -> impl Responder {
     let redisclient = redis::Client::open("redis://127.0.0.1:6379/").unwrap();
     let mut con = redisclient.get_connection().unwrap();
 
-    // Open the CSV file
-    let file = File::open("urls.csv").unwrap();
-    let mut reader = csv::Reader::from_reader(BufReader::new(file));
-
     let mut vecoftimes: Vec<feedtimes> = Vec::new();
 
     let startiterator = Instant::now();
 
-    // Iterate over each record (line) in the CSV file
-    for result in reader.records() {
-        // Unwrap the record
-        let record = result.unwrap();
+    let keys = con.keys::<String, Vec<String>>(String::from("gtfsrtexists|*"));
 
-        // Check the number of fields in the record
-        if record.len() > 0 {
-            // Print the first field of the record
+    let keys = match keys {
+        Ok(data) => {
+            let mut keys: Vec<String> = data;
 
-            let feed = record.get(0).unwrap();
+            for key in keys.iter_mut() {
+                key.replace("gtfsrtexists|", "");
 
-            let vehicles = con.get::<String, u64>(format!("gtfsrttime|{}|vehicles", feed));
-            let trips = con.get::<String, u64>(format!("gtfsrttime|{}|trips", feed));
-            let alerts = con.get::<String, u64>(format!("gtfsrttime|{}|alerts", feed));
+                // Print the first field of the record
 
-            let vehicles = match vehicles {
-                Ok(data) => Some(data),
-                Err(e) => None,
-            };
+                let vehicles = con.get::<String, u64>(format!("gtfsrttime|{}|vehicles", key));
+                let trips = con.get::<String, u64>(format!("gtfsrttime|{}|trips", key));
+                let alerts = con.get::<String, u64>(format!("gtfsrttime|{}|alerts", key));
 
-            let trips = match trips {
-                Ok(data) => Some(data),
-                Err(e) => None,
-            };
+                let vehicles = match vehicles {
+                    Ok(data) => Some(data),
+                    Err(e) => None,
+                };
 
-            let alerts = match alerts {
-                Ok(data) => Some(data),
-                Err(e) => None,
-            };
+                let trips = match trips {
+                    Ok(data) => Some(data),
+                    Err(e) => None,
+                };
 
-            let has_vehicles = !(record.get(1).unwrap().is_empty());
-            let has_trips = !(record.get(2).unwrap().is_empty());
-            let has_alerts = !(record.get(3).unwrap().is_empty());
+                let alerts = match alerts {
+                    Ok(data) => Some(data),
+                    Err(e) => None,
+                };
 
-            let feedtime = feedtimes {
-                feed: feed.to_string(),
-                vehicles: vehicles,
-                trips: trips,
-                alerts: alerts,
-                has_vehicles: has_vehicles,
-                has_trips: has_trips,
-                has_alerts: has_alerts,
-            };
+                let feedtime = feedtimes {
+                    feed: feed.to_string(),
+                    vehicles: vehicles,
+                    trips: trips,
+                    alerts: alerts,
+                };
 
-            vecoftimes.push(feedtime);
+                vecoftimes.push(feedtime);
+            }
         }
-    }
+        Err(e) => None,
+    };
 
     let finishiterator = startiterator.elapsed();
 
@@ -207,48 +196,36 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
 
                     match doesexist {
                         Ok(data) => {
-                        
-                           
-                                let data = con.get::<String, Vec<u8>>(format!(
-                                    "gtfsrt|{}|{}",
-                                    feed, category
-                                ));
+                            let data =
+                                con.get::<String, Vec<u8>>(format!("gtfsrt|{}|{}", feed, category));
 
-                                match data {
-                                    Ok(data) => {
-                                        let proto = parse_protobuf_message(&data);
+                            match data {
+                                Ok(data) => {
+                                    let proto = parse_protobuf_message(&data);
 
-                                        match proto {
-                                            Ok(proto) => {
-                                                let protojson = print_to_string(&proto).unwrap();
+                                    match proto {
+                                        Ok(proto) => {
+                                            let protojson = print_to_string(&proto).unwrap();
 
-                                                HttpResponse::Ok()
-                                                    .insert_header((
-                                                        "Content-Type",
-                                                        "application/json",
-                                                    ))
-                                                    .insert_header(("Server", "Kactus"))
-                                                    .insert_header((
-                                                        "Access-Control-Allow-Origin",
-                                                        "*",
-                                                    ))
-                                                    .body(protojson)
-                                            }
-                                            Err(proto) => {
-                                                println!("Error parsing protobuf");
+                                            HttpResponse::Ok()
+                                                .insert_header(("Content-Type", "application/json"))
+                                                .insert_header(("Server", "Kactus"))
+                                                .insert_header(("Access-Control-Allow-Origin", "*"))
+                                                .body(protojson)
+                                        }
+                                        Err(proto) => {
+                                            println!("Error parsing protobuf");
 
-                                                HttpResponse::NotFound()
-                                                    .body("Parse protobuf failed")
-                                            }
+                                            HttpResponse::NotFound().body("Parse protobuf failed")
                                         }
                                     }
-                                    Err(e) => HttpResponse::NotFound()
-                                        .insert_header(("Content-Type", "text/plain"))
-                                        .insert_header(("Server", "Kactus"))
-                                        .insert_header(("Access-Control-Allow-Origin", "*"))
-                                        .body(format!("Error: {}\n", e)),
                                 }
-                            
+                                Err(e) => HttpResponse::NotFound()
+                                    .insert_header(("Content-Type", "text/plain"))
+                                    .insert_header(("Server", "Kactus"))
+                                    .insert_header(("Access-Control-Allow-Origin", "*"))
+                                    .body(format!("Error: {}\n", e)),
+                            }
                         }
                         Err(e) => {
                             return HttpResponse::NotFound()
