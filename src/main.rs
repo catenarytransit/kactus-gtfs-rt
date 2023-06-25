@@ -125,6 +125,8 @@ async fn gtfsrttimes(req: HttpRequest) -> impl Responder {
         Ok(data) => {
             let mut keys: Vec<String> = data;
 
+            keys.sort();
+
             for key in keys.iter_mut() {
                 let feed = key.replace("gtfsrtexists|", "");
 
