@@ -126,13 +126,13 @@ async fn gtfsrttimes(req: HttpRequest) -> impl Responder {
             let mut keys: Vec<String> = data;
 
             for key in keys.iter_mut() {
-                key.replace("gtfsrtexists|", "");
+                let feed = key.replace("gtfsrtexists|", "");
 
                 // Print the first field of the record
 
-                let vehicles = con.get::<String, u64>(format!("gtfsrttime|{}|vehicles", key));
-                let trips = con.get::<String, u64>(format!("gtfsrttime|{}|trips", key));
-                let alerts = con.get::<String, u64>(format!("gtfsrttime|{}|alerts", key));
+                let vehicles = con.get::<String, u64>(format!("gtfsrttime|{}|vehicles", feed));
+                let trips = con.get::<String, u64>(format!("gtfsrttime|{}|trips", feed));
+                let alerts = con.get::<String, u64>(format!("gtfsrttime|{}|alerts", feed));
 
                 let vehicles = match vehicles {
                     Ok(data) => Some(data),
@@ -150,7 +150,7 @@ async fn gtfsrttimes(req: HttpRequest) -> impl Responder {
                 };
 
                 let feedtime = feedtimes {
-                    feed: key.clone(),
+                    feed: feed.clone(),
                     vehicles: vehicles,
                     trips: trips,
                     alerts: alerts,
