@@ -121,7 +121,7 @@ async fn gtfsrttimes(req: HttpRequest) -> impl Responder {
 
     let keys = con.keys::<String, Vec<String>>(String::from("gtfsrtexists|*"));
 
-    let keys = match keys {
+    match keys {
         Ok(data) => {
             let mut keys: Vec<String> = data;
 
