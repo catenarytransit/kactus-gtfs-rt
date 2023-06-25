@@ -150,7 +150,7 @@ async fn gtfsrttimes(req: HttpRequest) -> impl Responder {
                 };
 
                 let feedtime = feedtimes {
-                    feed: feed.to_string(),
+                    feed: key.clone(),
                     vehicles: vehicles,
                     trips: trips,
                     alerts: alerts,
