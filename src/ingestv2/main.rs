@@ -278,7 +278,7 @@ async fn main() {
                                     }
                                 }
                             } 
-                            else if resp.status().is_redirect() {
+                            else if resp.status().is_redirection() {
                                 println!(
                                     "{}{} {} HTTP redirect: {}{}",
                                     color::Fg(color::Yellow),
