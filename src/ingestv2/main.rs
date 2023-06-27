@@ -213,7 +213,7 @@ async fn main() {
                         urltouse = urltouse.replace("PASSWORD", &passwordtouse);
                     }
 
-                    let mut req = client.redirect(policy).get(urltouse);
+                    let mut req = client.get(urltouse);
 
                     if reqquery.auth_type == "header" {
                         req = req.header(&reqquery.auth_header, &passwordtouse);
@@ -277,7 +277,18 @@ async fn main() {
                                         println!("error parsing bytes: {}", &reqquery.url);
                                     }
                                 }
-                            } else {
+                            } 
+                            else if resp.status().is_redirect() {
+                                println!(
+                                    "{}{} {} HTTP redirect: {}{}",
+                                    color::Fg(color::Yellow),
+                                    &reqquery.onetrip,
+                                    &reqquery.category,
+                                    resp.status(),
+                                    style::Reset
+                                );
+                            }
+                            else {
                                 println!(
                                     "{} {} HTTP error: {}",
                                     &reqquery.onetrip,
