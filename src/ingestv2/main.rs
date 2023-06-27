@@ -213,7 +213,7 @@ async fn main() {
                         urltouse = urltouse.replace("PASSWORD", &passwordtouse);
                     }
 
-                    let mut req = client.get(urltouse);
+                    let mut req = client.redirect(policy).get(urltouse);
 
                     if reqquery.auth_type == "header" {
                         req = req.header(&reqquery.auth_header, &passwordtouse);
