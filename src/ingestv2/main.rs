@@ -71,6 +71,10 @@ async fn main() {
     let mut reader = csv::Reader::from_reader(BufReader::new(file));
 
     let mut agencies: Vec<AgencyInfo> = Vec::new();
+    
+    
+    let client = ReqwestClient::new();
+
 
     for record in reader.records() {
         match record {
@@ -167,8 +171,13 @@ async fn main() {
 
         let reqquery_vec_cloned = reqquery_vec.clone();
 
+     
+
         let fetches = futures::stream::iter(reqquery_vec_cloned.into_iter().map(|reqquery| {
+            let client = &client;
+            
             async move {
+
                 //println!("Fetching {}", reqquery_vec.url);
 
                 let redisclient = redis::Client::open("redis://127.0.0.1:6379/").unwrap();
@@ -200,7 +209,6 @@ async fn main() {
                 }
 
                 if allowrun {
-                    let client = ReqwestClient::new();
 
                     let mut urltouse = reqquery.url.clone();
 
