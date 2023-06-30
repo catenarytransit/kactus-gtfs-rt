@@ -51,3 +51,8 @@ you can add the `threads` parameter
 ```bash
 cargo run --bin ingestv2 -- --urls public-urls.csv --threads 10
 ```
+
+you can also add the timeout parameter in milliseconds, the default being `15000` ms aka 15 seconds.
+```bash
+---timeout 10000
+```

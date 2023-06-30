@@ -61,6 +61,14 @@ let filenametouse = match arguments.get::<String>("urls") {
     
 };
 
+let timeoutforfetch = match arguments.get::<u32>("timeout") {
+    Some(filename) => 
+        filename,
+    None => 
+        15_000
+    
+};
+
 
 let threadcount = match arguments.get::<usize>("threads") {
     Some(threadcount) => 
@@ -227,7 +235,7 @@ let threadcount = match arguments.get::<usize>("threads") {
                         req = req.header(&reqquery.auth_header, &passwordtouse);
                     }
 
-                    let resp = req.timeout(Duration::from_secs(10)).send().await;
+                    let resp = req.timeout(Duration::from_millis(timeoutforfetch)).send().await;
 
                     match resp {
                         Ok(resp) => {
