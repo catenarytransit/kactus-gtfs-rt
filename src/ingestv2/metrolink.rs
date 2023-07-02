@@ -25,7 +25,7 @@ fn parse_protobuf_message(bytes: &[u8]) -> Result<FeedMessage, protobuf::Error> 
 #[tokio::main]
 async fn main() {
 
-    let metrolink_key = fs::read_to_string("./metrolink-key.txt").expect("Unable to read file metrolink-key.txt");
+    let metrolink_key = fs::read_to_string("./metrolink-key.txt").expect("Unable to read file metrolink-key.txt").trim().to_string();
 
     let arguments = std::env::args();
     let arguments = arguments::parse(arguments).unwrap();
