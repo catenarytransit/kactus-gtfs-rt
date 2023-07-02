@@ -125,6 +125,10 @@ async fn runcategory(client: &ReqwestClient, metrolink_key: &String, category: &
                                             Some(timestamp) => {
                                                 *last_protobuf_timestamp = Some(timestamp as u128);
 
+                                                println!("timestamp is {} aka {} ms ago", timestamp,
+                                                SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis() - (timestamp as u128 * 1000)
+                                            );
+
                                                 let _: () = con.set(format!(
                                                     "gtfsrttime|{}|{}",
                                                     "f-metrolinktrains~rt", &category
