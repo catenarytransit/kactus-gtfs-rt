@@ -67,7 +67,7 @@ fn determine_if_category_should_run(
             if last_attempt.elapsed().as_millis() as i64 > 1000 {
                 match last_protobuf_timestamp {
                     Some(last_protobuf_timestamp) => {
-                        if get_epoch_ms() - (last_protobuf_timestamp * 1000) > 60_000 {
+                        if get_epoch_ms() - (last_protobuf_timestamp * 1000) > 60_500 {
                             true
                         } else {
                             //println!("Skip! it was only {} ms ago", get_epoch_ms() - last_protobuf_timestamp * 1000);
