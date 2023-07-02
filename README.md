@@ -56,3 +56,14 @@ you can also add the timeout parameter in milliseconds, the default being `15000
 ```bash
 ---timeout 10000
 ```
+
+### Run the special metrolink program using Kyler's "Request in Perfect Time" algorithm
+
+Basically this skirts around the 429 rate limit error by sending requests almost exactly 30 seconds after the last request.
+
+First, paste your metrolink key into the file `metrolink-key.txt`
+
+Then run
+```bash
+cargo run --bin ingestmetrolink
+```

@@ -47,8 +47,6 @@ struct Reqquery {
 
 #[tokio::main]
 async fn main() {
-    let mut lastloop = Instant::now();
-
     let arguments = std::env::args();
     let arguments = arguments::parse(arguments).unwrap();
 
@@ -71,10 +69,8 @@ async fn main() {
     let mut reader = csv::Reader::from_reader(BufReader::new(file));
 
     let mut agencies: Vec<AgencyInfo> = Vec::new();
-    
-    
-    let client = ReqwestClient::new();
 
+    let client = ReqwestClient::new();
 
     for record in reader.records() {
         match record {
@@ -100,8 +96,6 @@ async fn main() {
             }
         }
     }
-
-    let mut lastloop: std::time::Instant;
 
     let mut reqquery_vec: Vec<Reqquery> = Vec::new();
 
@@ -170,8 +164,6 @@ async fn main() {
         lastloop = Instant::now();
 
         let reqquery_vec_cloned = reqquery_vec.clone();
-
-     
 
         let fetches = futures::stream::iter(reqquery_vec_cloned.into_iter().map(|reqquery| {
             let client = &client;

@@ -41,3 +41,7 @@ path = "src/testm/testm.rs"
 [[bin]]
 name = "ingestv2"
 path = "src/ingestv2/main.rs"
+
+[[bin]]
+name = "ingestmetrolink"
+path = "src/ingestv2/metrolink.rs"
