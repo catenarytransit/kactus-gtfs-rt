@@ -64,7 +64,7 @@ fn determine_if_category_should_run(
     match last_attempt {
         None => true,
         Some(last_attempt) => {
-            if last_attempt.elapsed().as_millis() as i64 > 500 {
+            if last_attempt.elapsed().as_millis() as i64 > 1000 {
                 match last_protobuf_timestamp {
                     Some(last_protobuf_timestamp) => {
                         if get_epoch_ms() - (last_protobuf_timestamp * 1000) > 30_000 {
