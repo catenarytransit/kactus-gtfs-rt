@@ -64,7 +64,7 @@ fn determine_if_category_should_run(
     match last_attempt {
         None => true,
         Some(last_attempt) => {
-            if last_attempt.elapsed().as_millis() as i64 > 1000 {
+            if last_attempt.elapsed().as_millis() as i64 > 500 {
                 match last_protobuf_timestamp {
                     Some(last_protobuf_timestamp) => {
                         if get_epoch_ms() - (last_protobuf_timestamp * 1000) > 60_500 {
@@ -144,6 +144,20 @@ async fn runcategory(client: &ReqwestClient, metrolink_key: &String, category: &
                                                     "gtfsrt|{}|{}",
                                                     "f-metrolinktrains~rt", &category
                                                 ), bytes).unwrap();
+
+                                                let _: () = con
+                                            .set(
+                                                format!(
+                                                    "gtfsrtexists|{}",
+                                                    "f-metrolinktrains~rt"
+                                                ),
+                                                SystemTime::now()
+                                                    .duration_since(UNIX_EPOCH)
+                                                    .unwrap()
+                                                    .as_millis()
+                                                    .to_string(),
+                                            )
+                                            .unwrap();
 
                                             },
                                             None => {
