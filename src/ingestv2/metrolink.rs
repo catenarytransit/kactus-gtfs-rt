@@ -70,7 +70,7 @@ fn determine_if_category_should_run(
                         if get_epoch_ms() - (last_protobuf_timestamp * 1000) > 30_000 {
                             true
                         } else {
-                            println!("Skip! it was only {} ms ago", get_epoch_ms() - last_protobuf_timestamp);
+                            //println!("Skip! it was only {} ms ago", get_epoch_ms() - last_protobuf_timestamp * 1000);
                             false
                         }
                     }
@@ -116,7 +116,7 @@ async fn runcategory(client: &ReqwestClient, metrolink_key: &String, category: &
                             Ok(bytes) => {
                                 let bytes = bytes.to_vec();
 
-                                println!("Success, byte length {}", bytes.len());
+                                println!("{} Success, byte length {}", &category, bytes.len());
 
                                 let protobuf_message = parse_protobuf_message(&bytes);
 
@@ -126,7 +126,7 @@ async fn runcategory(client: &ReqwestClient, metrolink_key: &String, category: &
                                             Some(timestamp) => {
                                                 *last_protobuf_timestamp = Some(timestamp as u128);
 
-                                                println!("timestamp is {} aka {} ms ago", timestamp,
+                                                println!("{} timestamp is {} aka {} ms ago", category, timestamp,
                                                 get_epoch_ms() - (timestamp as u128 * 1000)
                                             );
 
@@ -147,18 +147,18 @@ async fn runcategory(client: &ReqwestClient, metrolink_key: &String, category: &
 
                                             },
                                             None => {
-                                                println!("Protobuf missing timestamp");
+                                                println!("{} Protobuf missing timestamp", &category);
                                             }
                                         }
                                     },
                                     Err(e) => {
-                                        println!("Cannot interpret protobuf");
+                                        println!("{} Cannot interpret protobuf", category);
                                     }
                                 }
                                 
                             }
                             Err(err) => {
-                                println!("Failed to convert bytes")
+                                println!("{} Failed to convert bytes", category)
                             }
                         }
                     }
