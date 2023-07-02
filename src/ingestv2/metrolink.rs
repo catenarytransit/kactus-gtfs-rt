@@ -70,6 +70,7 @@ fn determine_if_category_should_run(
                         if get_epoch_ms() - (last_protobuf_timestamp * 1000) > 30_000 {
                             true
                         } else {
+                            println!("Skip! it was only {} ms ago", get_epoch_ms() - last_protobuf_timestamp);
                             false
                         }
                     }
@@ -126,7 +127,7 @@ async fn runcategory(client: &ReqwestClient, metrolink_key: &String, category: &
                                                 *last_protobuf_timestamp = Some(timestamp as u128);
 
                                                 println!("timestamp is {} aka {} ms ago", timestamp,
-                                                SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis() - (timestamp as u128 * 1000)
+                                                get_epoch_ms() - (timestamp as u128 * 1000)
                                             );
 
                                                 let _: () = con.set(format!(
