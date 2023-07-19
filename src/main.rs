@@ -1,4 +1,4 @@
-use actix_web::{web, App, HttpRequest, HttpResponse, HttpServer, Responder};
+use actix_web::{web, App, HttpRequest, HttpResponse, HttpServer, Responder, middleware::DefaultHeaders};
 use redis::Commands;
 extern crate qstring;
 use csv::ReaderBuilder;
@@ -56,7 +56,25 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
                         con.get::<String, u64>(format!("gtfsrttime|{}|{}", &feed, &category));
 
                     match doesexist {
-                        Ok(existdata) => {
+                        Ok(timeofcache) => {
+
+                            let timeofclientcache = qs.get("timeofcache");
+
+                            if timeofclientcache.is_some() {
+                                let timeofclientcache = timeofclientcache.unwrap();
+
+                                let timeofclientcache = (*timeofclientcache).parse::<u64>();
+
+                                if timeofclientcache.is_ok() {
+                                    let timeofclientcache = timeofclientcache.unwrap();
+
+                                    if timeofclientcache >= timeofcache {
+                                        return HttpResponse::NoContent().body("");
+                                    }
+                                }
+                            }
+                            
+
                             let data = con
                                 .get::<String, Vec<u8>>(format!("gtfsrt|{}|{}", &feed, &category));
 
@@ -66,15 +84,12 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
                                         "Content-Type",
                                         "application/x-google-protobuf",
                                     ))
-                                    .insert_header(("Server", "Kactus"))
-                                    .insert_header(("Access-Control-Allow-Origin", "*"))
+                                  
                                     .body(data),
                                 Err(e) => {
                                     println!("Error: {:?}", e);
                                     HttpResponse::NotFound()
                                         .insert_header(("Content-Type", "text/plain"))
-                                        .insert_header(("Server", "Kactus"))
-                                        .insert_header(("Access-Control-Allow-Origin", "*"))
                                         .body(format!("Error: {}\n", e))
                                 }
                             }
@@ -82,17 +97,13 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
                         Err(e) => {
                             return HttpResponse::NotFound()
                                 .insert_header(("Content-Type", "text/plain"))
-                                .insert_header(("Server", "Kactus"))
-                                .insert_header(("Access-Control-Allow-Origin", "*"))
-                                .body(format!("Error in connecting to redis\n"))
+                                .body(format!("Error in connecting to redis\n"));
                         }
                     }
                 }
                 None => {
                     return HttpResponse::NotFound()
                         .insert_header(("Content-Type", "text/plain"))
-                        .insert_header(("Server", "Kactus"))
-                        .insert_header(("Access-Control-Allow-Origin", "*"))
                         .body("Error: No category specified\n")
                 }
             }
@@ -100,8 +111,6 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
         None => {
             return HttpResponse::NotFound()
                 .insert_header(("Content-Type", "text/plain"))
-                .insert_header(("Access-Control-Allow-Origin", "*"))
-                .insert_header(("Server", "Kactus"))
                 .body("Error: No feed specified\n")
         }
     }
@@ -165,8 +174,7 @@ async fn gtfsrttimes(req: HttpRequest) -> impl Responder {
             println!("Error: {:?}", e);
             return HttpResponse::InternalServerError()
                 .insert_header(("Content-Type", "text/plain"))
-                .insert_header(("Server", "Kactus"))
-                .insert_header(("Access-Control-Allow-Origin", "*"))
+               
                 .body(format!("Error: {}\n", e));
         }
     };
@@ -179,8 +187,7 @@ async fn gtfsrttimes(req: HttpRequest) -> impl Responder {
 
     HttpResponse::Ok()
         .insert_header(("Content-Type", "application/json"))
-        .insert_header(("Server", "Kactus"))
-        .insert_header(("Access-Control-Allow-Origin", "*"))
+        
         .body(format!("{}\n", json))
 }
 
@@ -204,7 +211,8 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
                         con.get::<String, u64>(format!("gtfsrttime|{}|{}", feed, category));
 
                     match doesexist {
-                        Ok(data) => {
+                        Ok(timeofcache) => {
+
                             let data =
                                 con.get::<String, Vec<u8>>(format!("gtfsrt|{}|{}", feed, category));
 
@@ -218,8 +226,7 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
 
                                             HttpResponse::Ok()
                                                 .insert_header(("Content-Type", "application/json"))
-                                                .insert_header(("Server", "Kactus"))
-                                                .insert_header(("Access-Control-Allow-Origin", "*"))
+                                                
                                                 .body(protojson)
                                         }
                                         Err(proto) => {
@@ -231,16 +238,14 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
                                 }
                                 Err(e) => HttpResponse::NotFound()
                                     .insert_header(("Content-Type", "text/plain"))
-                                    .insert_header(("Server", "Kactus"))
-                                    .insert_header(("Access-Control-Allow-Origin", "*"))
+                                   
                                     .body(format!("Error: {}\n", e)),
                             }
                         }
                         Err(e) => {
                             return HttpResponse::NotFound()
                                 .insert_header(("Content-Type", "text/plain"))
-                                .insert_header(("Server", "Kactus"))
-                                .insert_header(("Access-Control-Allow-Origin", "*"))
+                            
                                 .body(format!("Error in connecting to redis\n"))
                         }
                     }
@@ -248,8 +253,7 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
                 None => {
                     return HttpResponse::NotFound()
                         .insert_header(("Content-Type", "text/plain"))
-                        .insert_header(("Server", "Kactus"))
-                        .insert_header(("Access-Control-Allow-Origin", "*"))
+                        
                         .body("Error: No category specified\n")
                 }
             }
@@ -257,8 +261,7 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
         None => {
             return HttpResponse::NotFound()
                 .insert_header(("Content-Type", "text/plain"))
-                .insert_header(("Server", "Kactus"))
-                .insert_header(("Access-Control-Allow-Origin", "*"))
+                
                 .body("Error: No feed specified\n")
         }
     }
@@ -269,6 +272,13 @@ async fn main() -> std::io::Result<()> {
     // Create a new HTTP server.
     let builder = HttpServer::new(|| {
         App::new()
+        .wrap(DefaultHeaders::new().add((
+            "Server",
+            "Kactus")
+        ).add(
+            ("Access-Control-Allow-Origin",
+            "*")
+        ))
             .route("/", web::get().to(index))
             .route("/gtfsrt/", web::get().to(gtfsrt))
             .route("/gtfsrt", web::get().to(gtfsrt))
