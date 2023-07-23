@@ -6,6 +6,7 @@ use reqwest::Client as ReqwestClient;
 use std::thread;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use termion::{color, style};
+extern crate color_eyre;
 
 extern crate rand;
 use crate::rand::prelude::SliceRandom;
