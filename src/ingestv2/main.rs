@@ -66,7 +66,7 @@ async fn main() -> color_eyre::eyre::Result<()> {
 
     let threadcount = match arguments.get::<usize>("threads") {
         Some(threadcount) => threadcount,
-        None => 500,
+        None => 50,
     };
 
     let file = File::open(filenametouse).unwrap();
