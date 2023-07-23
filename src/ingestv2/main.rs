@@ -46,7 +46,10 @@ struct Reqquery {
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() -> color_eyre::eyre::Result<()> {
+
+    color_eyre::install()?;
+
     let arguments = std::env::args();
     let arguments = arguments::parse(arguments).unwrap();
 
@@ -196,7 +199,7 @@ async fn main() {
                     }
                     Err(last_updated_time) => {
                         println!("Error getting last updated time, probably its the first time running this agency {}", reqquery.onetrip);
-                        println!("{:?}", last_updated_time);
+                        println!("{:#?}", last_updated_time);
                     }
                 }
 

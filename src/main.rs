@@ -30,9 +30,7 @@ pub struct feedtimes {
 
 async fn index(req: HttpRequest) -> impl Responder {
     HttpResponse::Ok()
-        .insert_header(("Server", "Kactus"))
         .insert_header(("Content-Type", "text/plain"))
-        .insert_header(("Access-Control-Allow-Origin", "*"))
         .body("Hello world!")
 }
 
