@@ -48,7 +48,6 @@ struct Reqquery {
 
 #[tokio::main]
 async fn main() -> color_eyre::eyre::Result<()> {
-
     color_eyre::install()?;
 
     let arguments = std::env::args();

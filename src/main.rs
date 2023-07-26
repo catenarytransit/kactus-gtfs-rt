@@ -1,4 +1,6 @@
-use actix_web::{web, App, HttpRequest, HttpResponse, HttpServer, Responder, middleware::DefaultHeaders};
+use actix_web::{
+    middleware::DefaultHeaders, web, App, HttpRequest, HttpResponse, HttpServer, Responder,
+};
 use redis::Commands;
 extern crate qstring;
 use csv::ReaderBuilder;
@@ -55,53 +57,55 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
 
                     match doesexist {
                         Ok(timeofcache) => {
-
                             let data = con
                                 .get::<String, Vec<u8>>(format!("gtfsrt|{}|{}", &feed, &category));
 
                             match data {
                                 Ok(data) => {
-                                    
                                     let timeofclientcache = qs.get("timeofcache");
 
-                            if timeofclientcache.is_some() {
-                                let timeofclientcache = timeofclientcache.unwrap();
+                                    if timeofclientcache.is_some() {
+                                        let timeofclientcache = timeofclientcache.unwrap();
 
-                                let timeofclientcache = (*timeofclientcache).parse::<u64>();
+                                        let timeofclientcache = (*timeofclientcache).parse::<u64>();
 
-                                if timeofclientcache.is_ok() {
-                                    let timeofclientcache = timeofclientcache.unwrap();
+                                        if timeofclientcache.is_ok() {
+                                            let timeofclientcache = timeofclientcache.unwrap();
 
-                                    if timeofclientcache >= timeofcache {
-                                        return HttpResponse::NoContent().body("");
-                                    }
+                                            if timeofclientcache >= timeofcache {
+                                                return HttpResponse::NoContent().body("");
+                                            }
 
-                                     let proto = parse_protobuf_message(&data);
-                                    
-                                    let headertimestamp = proto.header.timestamp;
+                                            let proto = parse_protobuf_message(&data);
 
-                                    match headertimestamp {
-                                    Ok(headertimestamp) => {
-                                        if timeofclientcache >= headertimestamp {
-                                        return HttpResponse::NoContent().body("");
-                                    }
-                                    },
-                                        Err(bruh) => {
-                                            return HttpResponse::InternalServerError().body("protobuf failed to parse");
+                                            match proto {
+                                                Ok(proto) => {
+                                                    let headertimestamp = proto.header.timestamp;
+
+                                                    if (headertimestamp.is_some()) {
+                                                        if timeofclientcache
+                                                            >= headertimestamp.unwrap()
+                                                        {
+                                                            return HttpResponse::NoContent()
+                                                                .body("");
+                                                        }
+                                                    }
+                                                }
+                                                Err(bruh) => {
+                                                    return HttpResponse::InternalServerError()
+                                                        .body("protobuf failed to parse");
+                                                }
+                                            }
                                         }
                                     }
-                                    
-                                    
-                                }
-                            }
-                                    
+
                                     HttpResponse::Ok()
-                                    .insert_header((
-                                        "Content-Type",
-                                        "application/x-google-protobuf",
-                                    ))
-                                  
-                                    .body(data)},
+                                        .insert_header((
+                                            "Content-Type",
+                                            "application/x-google-protobuf",
+                                        ))
+                                        .body(data)
+                                }
                                 Err(e) => {
                                     println!("Error: {:?}", e);
                                     HttpResponse::NotFound()
@@ -202,7 +206,6 @@ async fn gtfsrttimes(req: HttpRequest) -> impl Responder {
 
     HttpResponse::Ok()
         .insert_header(("Content-Type", "application/json"))
-        
         .body(format!("{}\n", json))
 }
 
@@ -227,7 +230,6 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
 
                     match doesexist {
                         Ok(timeofcache) => {
-
                             let data =
                                 con.get::<String, Vec<u8>>(format!("gtfsrt|{}|{}", feed, category));
 
@@ -282,13 +284,11 @@ async fn main() -> std::io::Result<()> {
     // Create a new HTTP server.
     let builder = HttpServer::new(|| {
         App::new()
-        .wrap(DefaultHeaders::new().add((
-            "Server",
-            "Kactus")
-        ).add(
-            ("Access-Control-Allow-Origin",
-            "*")
-        ))
+            .wrap(
+                DefaultHeaders::new()
+                    .add(("Server", "Kactus"))
+                    .add(("Access-Control-Allow-Origin", "*")),
+            )
             .route("/", web::get().to(index))
             .route("/gtfsrt/", web::get().to(gtfsrt))
             .route("/gtfsrt", web::get().to(gtfsrt))
