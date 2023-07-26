@@ -25,6 +25,7 @@ serde_derive = "*"
 serde_json = "*"
 serde = "*"
 arguments = "0.7"
+color-eyre = "0.6.2"
 
 [[bin]]
 name = "server"

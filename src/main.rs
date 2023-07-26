@@ -30,9 +30,7 @@ pub struct feedtimes {
 
 async fn index(req: HttpRequest) -> impl Responder {
     HttpResponse::Ok()
-        .insert_header(("Server", "Kactus"))
         .insert_header(("Content-Type", "text/plain"))
-        .insert_header(("Access-Control-Allow-Origin", "*"))
         .body("Hello world!")
 }
 
@@ -58,7 +56,13 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
                     match doesexist {
                         Ok(timeofcache) => {
 
-                            let timeofclientcache = qs.get("timeofcache");
+                            let data = con
+                                .get::<String, Vec<u8>>(format!("gtfsrt|{}|{}", &feed, &category));
+
+                            match data {
+                                Ok(data) => {
+                                    
+                                    let timeofclientcache = qs.get("timeofcache");
 
                             if timeofclientcache.is_some() {
                                 let timeofclientcache = timeofclientcache.unwrap();
@@ -71,21 +75,33 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
                                     if timeofclientcache >= timeofcache {
                                         return HttpResponse::NoContent().body("");
                                     }
+
+                                     let proto = parse_protobuf_message(&data);
+                                    
+                                    let headertimestamp = proto.header.timestamp;
+
+                                    match headertimestamp {
+                                    Ok(headertimestamp) => {
+                                        if timeofclientcache >= headertimestamp {
+                                        return HttpResponse::NoContent().body("");
+                                    }
+                                    },
+                                        Err(bruh) => {
+                                            return HttpResponse::InternalServerError().body("protobuf failed to parse");
+                                        }
+                                    }
+                                    
+                                    
                                 }
                             }
-                            
-
-                            let data = con
-                                .get::<String, Vec<u8>>(format!("gtfsrt|{}|{}", &feed, &category));
-
-                            match data {
-                                Ok(data) => HttpResponse::Ok()
+                                    
+                                    HttpResponse::Ok()
                                     .insert_header((
                                         "Content-Type",
                                         "application/x-google-protobuf",
                                     ))
                                   
-                                    .body(data),
+                                    .body(data)},
                                 Err(e) => {
                                     println!("Error: {:?}", e);
                                     HttpResponse::NotFound()

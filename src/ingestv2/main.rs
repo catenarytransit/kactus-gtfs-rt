@@ -6,6 +6,7 @@ use reqwest::Client as ReqwestClient;
 use std::thread;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use termion::{color, style};
+extern crate color_eyre;
 
 extern crate rand;
 use crate::rand::prelude::SliceRandom;
@@ -46,7 +47,10 @@ struct Reqquery {
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() -> color_eyre::eyre::Result<()> {
+
+    color_eyre::install()?;
+
     let arguments = std::env::args();
     let arguments = arguments::parse(arguments).unwrap();
 
@@ -62,7 +66,7 @@ async fn main() {
 
     let threadcount = match arguments.get::<usize>("threads") {
         Some(threadcount) => threadcount,
-        None => 500,
+        None => 50,
     };
 
     let file = File::open(filenametouse).unwrap();
@@ -196,7 +200,7 @@ async fn main() {
                     }
                     Err(last_updated_time) => {
                         println!("Error getting last updated time, probably its the first time running this agency {}", reqquery.onetrip);
-                        println!("{:?}", last_updated_time);
+                        println!("{:#?}", last_updated_time);
                     }
                 }
 
