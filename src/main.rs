@@ -174,7 +174,6 @@ async fn gtfsrttimes(req: HttpRequest) -> impl Responder {
             println!("Error: {:?}", e);
             return HttpResponse::InternalServerError()
                 .insert_header(("Content-Type", "text/plain"))
-               
                 .body(format!("Error: {}\n", e));
         }
     };
@@ -226,7 +225,6 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
 
                                             HttpResponse::Ok()
                                                 .insert_header(("Content-Type", "application/json"))
-                                                
                                                 .body(protojson)
                                         }
                                         Err(proto) => {
@@ -238,14 +236,12 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
                                 }
                                 Err(e) => HttpResponse::NotFound()
                                     .insert_header(("Content-Type", "text/plain"))
-                                   
                                     .body(format!("Error: {}\n", e)),
                             }
                         }
                         Err(e) => {
                             return HttpResponse::NotFound()
                                 .insert_header(("Content-Type", "text/plain"))
-                            
                                 .body(format!("Error in connecting to redis\n"))
                         }
                     }
@@ -253,7 +249,6 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
                 None => {
                     return HttpResponse::NotFound()
                         .insert_header(("Content-Type", "text/plain"))
-                        
                         .body("Error: No category specified\n")
                 }
             }
@@ -261,7 +256,6 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
         None => {
             return HttpResponse::NotFound()
                 .insert_header(("Content-Type", "text/plain"))
-                
                 .body("Error: No feed specified\n")
         }
     }
