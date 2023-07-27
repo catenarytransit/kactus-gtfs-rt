@@ -76,13 +76,22 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
                                         return HttpResponse::NoContent().body("");
                                     }
 
-    let proto = parse_protobuf_message(&data);
+                                     let proto = parse_protobuf_message(&data);
                                     
                                     let headertimestamp = proto.header.timestamp;
-                                    
-                                    if timeofclientcache >= headertimestamp {
+
+                                    match headertimestamp {
+                                    Ok(headertimestamp) => {
+                                        if timeofclientcache >= headertimestamp {
                                         return HttpResponse::NoContent().body("");
                                     }
+                                    },
+                                        Err(bruh) => {
+                                            return HttpResponse::InternalServerError().body("protobuf failed to parse");
+                                        }
+                                    }
+                                    
+                                    
                                 }
                             }
                                     
