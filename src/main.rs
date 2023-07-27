@@ -56,7 +56,13 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
                     match doesexist {
                         Ok(timeofcache) => {
 
-                            let timeofclientcache = qs.get("timeofcache");
+                            let data = con
+                                .get::<String, Vec<u8>>(format!("gtfsrt|{}|{}", &feed, &category));
+
+                            match data {
+                                Ok(data) => {
+                                    
+                                    let timeofclientcache = qs.get("timeofcache");
 
                             if timeofclientcache.is_some() {
                                 let timeofclientcache = timeofclientcache.unwrap();
@@ -69,21 +75,24 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
                                     if timeofclientcache >= timeofcache {
                                         return HttpResponse::NoContent().body("");
                                     }
+
+    let proto = parse_protobuf_message(&data);
+                                    
+                                    let headertimestamp = proto.header.timestamp;
+                                    
+                                    if (timeofclientcache >= headertimestamp {
+                                        return HttpResponse::NoContent().body("");
+                                    }
                                 }
                             }
-                            
-
-                            let data = con
-                                .get::<String, Vec<u8>>(format!("gtfsrt|{}|{}", &feed, &category));
-
-                            match data {
-                                Ok(data) => HttpResponse::Ok()
+                                    
+                                    HttpResponse::Ok()
                                     .insert_header((
                                         "Content-Type",
                                         "application/x-google-protobuf",
                                     ))
                                   
-                                    .body(data),
+                                    .body(data)},
                                 Err(e) => {
                                     println!("Error: {:?}", e);
                                     HttpResponse::NotFound()
