@@ -92,6 +92,9 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
                                                     }
                                                 }
                                                 Err(bruh) => {
+
+                                                    println!("{:#?}",bruh);
+
                                                     return HttpResponse::InternalServerError()
                                                         .body("protobuf failed to parse");
                                                 }
