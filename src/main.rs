@@ -80,7 +80,7 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
                                     
                                     let headertimestamp = proto.header.timestamp;
                                     
-                                    if (timeofclientcache >= headertimestamp {
+                                    if timeofclientcache >= headertimestamp {
                                         return HttpResponse::NoContent().body("");
                                     }
                                 }
