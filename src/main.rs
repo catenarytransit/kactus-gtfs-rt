@@ -95,8 +95,20 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
 
                                                     println!("{:#?}",bruh);
 
-                                                    return HttpResponse::InternalServerError()
+                                                    let skipfailure = qs.get("skipfailure");
+
+                                                    let mut allowcrash = true;
+
+                                                    if skipfailure.is_some() {
+                                                        if skipfailure.unwrap() == "true" {
+                                                          allowcrash = false;
+                                                        }
+                                                    }
+
+                                                    if allowcrash {
+                                                        return HttpResponse::InternalServerError()
                                                         .body("protobuf failed to parse");
+                                                    }
                                                 }
                                             }
                                         }
