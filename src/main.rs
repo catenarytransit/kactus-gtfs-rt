@@ -329,7 +329,7 @@ async fn main() -> std::io::Result<()> {
                 DefaultHeaders::new()
                     .add(("Server", "Kactus"))
                     .add(("Access-Control-Allow-Origin", "*"))
-                    .add(("Access-Control-Expose-Headers", "Server", "hash", "server", "Hash")),
+                    .add(("Access-Control-Expose-Headers", "Server, hash, server, Hash"))
             )
             .route("/", web::get().to(index))
             .route("/gtfsrt/", web::get().to(gtfsrt))
