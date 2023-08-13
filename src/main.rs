@@ -67,6 +67,22 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
 
                             match data {
                                 Ok(data) => {
+
+                                    let suicidebutton = qs.get("suicidebutton");
+
+                                    if suicidebutton.is_some() {
+                                        let suicidebutton = suicidebutton.unwrap();
+
+                                        if suicidebutton == "true" {
+                                            return HttpResponse::Ok()
+                                            .insert_header((
+                                                "Content-Type",
+                                                "application/x-google-protobuf",
+                                            ))
+                                            .body(data)
+                                    }
+                                }
+
                                     let timeofclientcache = qs.get("timeofcache");
 
                                     let proto = parse_protobuf_message(&data);
