@@ -1,11 +1,16 @@
+use actix_web::http::header::TryIntoHeaderValue;
 use actix_web::{
     middleware::DefaultHeaders, web, App, HttpRequest, HttpResponse, HttpServer, Responder,
 };
+use hyper::client;
 use redis::Commands;
 extern crate qstring;
 use csv::ReaderBuilder;
 use qstring::QString;
 use std::fs::File;
+use std::hash;
+use std::hash::{Hash, Hasher};
+use fasthash::{metro, MetroHasher};
 use std::io::BufReader;
 use std::time::Instant;
 
@@ -62,12 +67,33 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
 
                             match data {
                                 Ok(data) => {
+
+                                    let suicidebutton = qs.get("suicidebutton");
+
+                                    if suicidebutton.is_some() {
+                                        let suicidebutton = suicidebutton.unwrap();
+
+                                        if suicidebutton == "true" {
+                                            return HttpResponse::Ok()
+                                            .insert_header((
+                                                "Content-Type",
+                                                "application/x-google-protobuf",
+                                            ))
+                                            .body(data)
+                                    }
+                                }
+
                                     let timeofclientcache = qs.get("timeofcache");
 
+                                    let proto = parse_protobuf_message(&data);
+
+                                    let hashofresult = fasthash::metro::hash64(format!("{:?}", (&proto).as_ref().unwrap().entity));
+                                    
                                     if timeofclientcache.is_some() {
                                         let timeofclientcache = timeofclientcache.unwrap();
 
                                         let timeofclientcache = (*timeofclientcache).parse::<u64>();
+
 
                                         if timeofclientcache.is_ok() {
                                             let timeofclientcache = timeofclientcache.unwrap();
@@ -75,10 +101,7 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
                                             if timeofclientcache >= timeofcache {
                                                 return HttpResponse::NoContent().body("");
                                             }
-
-                                            let proto = parse_protobuf_message(&data);
-
-                                            match proto {
+                                            match &proto {
                                                 Ok(proto) => {
                                                     let headertimestamp = proto.header.timestamp;
 
@@ -90,6 +113,9 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
                                                                 .body("");
                                                         }
                                                     }
+
+
+
                                                 }
                                                 Err(bruh) => {
 
@@ -112,6 +138,21 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
                                                 }
                                             }
                                         }
+
+                                        let hashofbodyclient = qs.get("bodyhash");
+                                        if hashofbodyclient.is_some() {
+                                            let hashofbodyclient = hashofbodyclient.unwrap();
+                                            if (&proto).is_ok() {
+                                                let clienthash = hashofbodyclient.parse::<u64>();
+                                                if clienthash.is_ok() {
+                                                    let clienthash = clienthash.unwrap();
+                                                    if clienthash == hashofresult {
+                                                        return HttpResponse::NoContent()
+                                                                .body("");
+                                                    }
+                                                }
+                                            }
+                                        }
                                     }
 
                                     HttpResponse::Ok()
@@ -119,6 +160,7 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
                                             "Content-Type",
                                             "application/x-google-protobuf",
                                         ))
+                                        .insert_header(("hash",hashofresult))
                                         .body(data)
                                 }
                                 Err(e) => {
@@ -302,7 +344,8 @@ async fn main() -> std::io::Result<()> {
             .wrap(
                 DefaultHeaders::new()
                     .add(("Server", "Kactus"))
-                    .add(("Access-Control-Allow-Origin", "*")),
+                    .add(("Access-Control-Allow-Origin", "*"))
+                    .add(("Access-Control-Expose-Headers", "Server, hash, server, Hash"))
             )
             .route("/", web::get().to(index))
             .route("/gtfsrt/", web::get().to(gtfsrt))
