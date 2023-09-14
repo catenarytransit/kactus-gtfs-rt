@@ -304,6 +304,7 @@ async fn main() -> color_eyre::eyre::Result<()> {
 
                                                     if (newhash == oldhash) {
                                                         continue_run = false;
+                                                        println!("Cancelled OCTA for having same hash");
                                                     }
                                                 }
                                                 }
