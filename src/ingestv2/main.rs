@@ -75,7 +75,7 @@ fn octa_compute_into_hash(feed: &FeedMessage) -> u64 {
 
     let value = format!("{:?}",arrayofelements);
 
-    let h = metro::hash64(value.as_bytes());
+    let h = metro::hash64(value);
 
     return h;
 }
