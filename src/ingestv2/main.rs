@@ -3,13 +3,20 @@ use redis::Commands;
 use redis::RedisError;
 use redis::{Client as RedisClient, RedisResult};
 use reqwest::Client as ReqwestClient;
+use std::array;
 use std::thread;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use termion::{color, style};
 extern crate color_eyre;
+use std::collections::hash_map::DefaultHasher;
+use fasthash::{metro, MetroHasher};
+use std::hash::{Hash, Hasher};
 
 extern crate rand;
 use crate::rand::prelude::SliceRandom;
+use protobuf::Message;
+use kactus::gtfs_realtime;
+use kactus::gtfs_realtime::FeedMessage;
 
 extern crate csv;
 
@@ -44,6 +51,33 @@ struct Reqquery {
     multiauth: Option<Vec<String>>,
     onetrip: String,
     fetch_interval: f32,
+}
+
+#[derive(Debug, Clone)]
+struct OctaBit {
+    position: kactus::gtfs_realtime::Position,
+    vehicle: kactus::gtfs_realtime::VehicleDescriptor,
+    trip: kactus::gtfs_realtime::TripDescriptor,
+}
+
+fn octa_compute_into_hash(feed: &FeedMessage) -> u64 {
+    let arrayofelements = feed.entity.iter()
+    .filter(|x| x.vehicle.is_some())
+    .map(|x| 
+        {
+            return OctaBit {
+                position: x.vehicle.clone().unwrap().position.unwrap(),
+                vehicle: x.vehicle.clone().unwrap().vehicle.unwrap(),
+                trip: x.vehicle.clone().unwrap().trip.unwrap(),
+        }
+        }
+    );
+
+    let value = format!("{:?}",arrayofelements);
+
+    let h = metro::hash64(value.as_bytes());
+
+    return h;
 }
 
 #[tokio::main]
@@ -242,44 +276,81 @@ async fn main() -> color_eyre::eyre::Result<()> {
                                             &reqquery.category,
                                             bytes.len()
                                         );
+                                        
+                                        let mut continue_run = true;
 
-                                        let _: () = con
-                                            .set(
-                                                format!(
+                                        //if feed is OCTA
+                                        if reqquery.onetrip == "f-octa~rt" {
+                                            //if category is vehicles
+                                            if reqquery.category == "vehicles" {
+                                                //convert existing to structs and see if the feed has even changed
+
+                                                let new_proto = parse_protobuf_message(&bytes);
+
+                                                let old_data = con.get::<String, Vec<u8>>(format!(
                                                     "gtfsrt|{}|{}",
                                                     &reqquery.onetrip, &reqquery.category
-                                                ),
-                                                bytes.to_vec(),
-                                            )
-                                            .unwrap();
+                                                ));
 
-                                        let _: () = con
-                                            .set(
-                                                format!(
-                                                    "gtfsrttime|{}|{}",
-                                                    &reqquery.onetrip, &reqquery.category
-                                                ),
-                                                SystemTime::now()
-                                                    .duration_since(UNIX_EPOCH)
-                                                    .unwrap()
-                                                    .as_millis()
-                                                    .to_string(),
-                                            )
-                                            .unwrap();
+                                                if (old_data.is_ok()) {
+                                                let old_proto =  parse_protobuf_message(&old_data.unwrap());
 
+                                                if (new_proto.is_ok() && old_proto.is_ok()) {
+                                                    let new_proto = new_proto.unwrap();
+                                                    let old_proto = old_proto.unwrap();
+
+                                                    let newhash = octa_compute_into_hash(&new_proto);
+                                                    let oldhash = octa_compute_into_hash(&old_proto);
+
+                                                    if (newhash == oldhash) {
+                                                        continue_run = false;
+                                                    }
+                                                }
+                                                }
+                                                }
+                                            }
+                                        
+
+                                        if true == continue_run {
+                                            
                                         let _: () = con
-                                            .set(
-                                                format!(
-                                                    "gtfsrtexists|{}",
-                                                    &reqquery.onetrip
-                                                ),
-                                                SystemTime::now()
-                                                    .duration_since(UNIX_EPOCH)
-                                                    .unwrap()
-                                                    .as_millis()
-                                                    .to_string(),
-                                            )
-                                            .unwrap();
+                                        .set(
+                                            format!(
+                                                "gtfsrt|{}|{}",
+                                                &reqquery.onetrip, &reqquery.category
+                                            ),
+                                            bytes.to_vec(),
+                                        )
+                                        .unwrap();
+
+                                    let _: () = con
+                                        .set(
+                                            format!(
+                                                "gtfsrttime|{}|{}",
+                                                &reqquery.onetrip, &reqquery.category
+                                            ),
+                                            SystemTime::now()
+                                                .duration_since(UNIX_EPOCH)
+                                                .unwrap()
+                                                .as_millis()
+                                                .to_string(),
+                                        )
+                                        .unwrap();
+
+                                    let _: () = con
+                                        .set(
+                                            format!(
+                                                "gtfsrtexists|{}",
+                                                &reqquery.onetrip
+                                            ),
+                                            SystemTime::now()
+                                                .duration_since(UNIX_EPOCH)
+                                                .unwrap()
+                                                .as_millis()
+                                                .to_string(),
+                                        )
+                                        .unwrap();
+                                        }
                                     }
                                     Err(e) => {
                                         println!("error parsing bytes: {}", &reqquery.url);
@@ -349,4 +420,8 @@ fn convert_multiauth_to_vec(inputstring: &String) -> Option<Vec<String>> {
     } else {
         None
     }
+}
+
+fn parse_protobuf_message(bytes: &[u8]) -> Result<FeedMessage, protobuf::Error> {
+    return gtfs_realtime::FeedMessage::parse_from_bytes(bytes);
 }
