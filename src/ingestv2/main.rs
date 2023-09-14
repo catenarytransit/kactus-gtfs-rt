@@ -71,7 +71,7 @@ fn octa_compute_into_hash(feed: &FeedMessage) -> u64 {
                 trip: x.vehicle.clone().unwrap().trip.unwrap(),
         }
         }
-    );
+    ).collect::<Vec<OctaBit>>();
 
     let value = format!("{:?}",arrayofelements);
 
