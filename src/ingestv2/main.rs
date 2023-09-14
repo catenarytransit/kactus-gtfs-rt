@@ -74,10 +74,7 @@ fn octa_compute_into_hash(feed: &FeedMessage) -> u64 {
     ).collect::<Vec<OctaBit>>();
 
     let value = format!("{:?}",arrayofelements);
-
-    let h = metro::hash64(value);
-
-    return h;
+    return metro::hash64(value);;
 }
 
 #[tokio::main]
