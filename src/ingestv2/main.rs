@@ -296,6 +296,7 @@ async fn main() -> color_eyre::eyre::Result<()> {
                                                 let old_proto =  parse_protobuf_message(&old_data.unwrap());
 
                                                 if (new_proto.is_ok() && old_proto.is_ok()) {
+                                                    println!("Comparing OCTA feeds");
                                                     let new_proto = new_proto.unwrap();
                                                     let old_proto = old_proto.unwrap();
 
