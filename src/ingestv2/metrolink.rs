@@ -79,15 +79,19 @@ async fn main() {
         if (last_veh_protobuf_timestamp.is_some()
          && last_trip_protobuf_timestamp.is_some()) {
             if (instant_comp.as_millis() - (last_veh_protobuf_timestamp.unwrap()*1000) < 57_000  &&
-            (instant_comp.as_millis() - (last_trip_protobuf_timestamp.unwrap()*1000) < 57_000
+            instant_comp.as_millis() - (last_trip_protobuf_timestamp.unwrap()*1000) < 57_000
         ) {
             let sleep_for = (std::cmp::min(
                 last_veh_protobuf_timestamp.unwrap(), last_trip_protobuf_timestamp.unwrap()
         ) + 57) - instant_comp.as_secs() as u128;
 
+        if (sleep_for > 1) {
+            
             println!("Sleeping for {}s",sleep_for);
 
             std::thread::sleep(Duration::from_secs(sleep_for.try_into().unwrap()));
+        }
+
         }
         }
     }
