@@ -78,8 +78,8 @@ async fn main() {
         let instant_comp = SystemTime::now().duration_since(UNIX_EPOCH).expect("Back to 1969?!?!!!");
         if (last_veh_protobuf_timestamp.is_some()
          && last_trip_protobuf_timestamp.is_some()) {
-            if ((last_veh_protobuf_timestamp.unwrap()*1000) + 57_000 < instant_comp.as_millis() &&
-        (last_trip_protobuf_timestamp.unwrap()*1000 + 57000) < instant_comp.as_millis() 
+            if (instant_comp.as_millis() - (last_veh_protobuf_timestamp.unwrap()*1000) < 57_000  &&
+            (instant_comp.as_millis() - (last_trip_protobuf_timestamp.unwrap()*1000) < 57_000
         ) {
             let sleep_for = (std::cmp::min(
                 last_veh_protobuf_timestamp.unwrap(), last_trip_protobuf_timestamp.unwrap()
