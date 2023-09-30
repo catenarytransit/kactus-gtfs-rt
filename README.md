@@ -16,7 +16,7 @@ sudo systemctl start redis-server
 
 ### Run the ingest engine
 ```
-cargo run --bin ingest
+cargo run --bin ingestv2
 ```
 ### Hosted by Kyler
 

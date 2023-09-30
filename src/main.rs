@@ -334,7 +334,7 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
                 .body("Error: No feed specified\n")
         }
     }
-}
+} 
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
