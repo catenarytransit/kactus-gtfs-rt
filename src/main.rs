@@ -67,6 +67,22 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
 
                             match data {
                                 Ok(data) => {
+
+                                    let suicidebutton = qs.get("suicidebutton");
+
+                                    if suicidebutton.is_some() {
+                                        let suicidebutton = suicidebutton.unwrap();
+
+                                        if suicidebutton == "true" {
+                                            return HttpResponse::Ok()
+                                            .insert_header((
+                                                "Content-Type",
+                                                "application/x-google-protobuf",
+                                            ))
+                                            .body(data)
+                                    }
+                                }
+
                                     let timeofclientcache = qs.get("timeofcache");
 
                                     let proto = parse_protobuf_message(&data);
@@ -318,7 +334,7 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
                 .body("Error: No feed specified\n")
         }
     }
-}
+} 
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -328,7 +344,8 @@ async fn main() -> std::io::Result<()> {
             .wrap(
                 DefaultHeaders::new()
                     .add(("Server", "Kactus"))
-                    .add(("Access-Control-Allow-Origin", "*")),
+                    .add(("Access-Control-Allow-Origin", "*"))
+                    .add(("Access-Control-Expose-Headers", "Server, hash, server, Hash"))
             )
             .route("/", web::get().to(index))
             .route("/gtfsrt/", web::get().to(gtfsrt))
