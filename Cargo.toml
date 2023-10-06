@@ -40,7 +40,3 @@ path = "src/ingestv2/main.rs"
 [[bin]]
 name = "ingestmetrolink"
 path = "src/ingestv2/metrolink.rs"
-
-[[bin]]
-name = "ingestnyccommuter"
-path = 'src/conversions/ingest_nyc_commuter/main.rs'
