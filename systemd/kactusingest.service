@@ -1,0 +1,15 @@
+[Unit]
+Description=Kactus Main Ingest
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=on-failure
+RestartSec=1
+User=kyler
+ExecStart=/usr/local/bin/cargo run --release --bin ingestv2 -- --urls urls.csv
+WorkingDirectory=/home/kyler/kactus-gtfs-rt
+
+[Install]
+WantedBy=multi-user.target
