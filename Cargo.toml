@@ -27,18 +27,11 @@ serde = "*"
 arguments = "0.7"
 color-eyre = "0.6.2"
 fasthash = "0.4.0"
+prost = "0.12.1"
 
 [[bin]]
 name = "server"
 path = "src/main.rs"
-
-[[bin]]
-name = "testcachetime"
-path = "src/test-cache-time/main.rs"
-
-[[bin]]
-name = "testm"
-path = "src/testm/testm.rs"
 
 [[bin]]
 name = "ingestv2"
@@ -47,3 +40,7 @@ path = "src/ingestv2/main.rs"
 [[bin]]
 name = "ingestmetrolink"
 path = "src/ingestv2/metrolink.rs"
+
+[[bin]]
+name = "ingestnyccommuter"
+path = 'src/conversions/ingest_nyc_commuter/main.rs'
