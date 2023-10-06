@@ -1,6 +1,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap};
+use rayon::prelude::*;
 use std::time::Instant;
 use protobuf::{CodedInputStream, Message as ProtobufMessage};
 use prost::Message;
@@ -106,6 +107,33 @@ pub struct MtaTrain {
     status: TrainStatus,
 }
 
+fn convert(mta: &Vec<MtaTrain>,railroad: &str) -> Vec<gtfs_rt::FeedEntity> {
+    mta.par_iter().filter(|mta| mta.railroad.as_str() == railroad)
+    .map(|mta| gtfs_rt::FeedEntity {
+        id: mta.train_id.clone(),
+        is_deleted: None,
+        trip_update: None,
+        alert: None,
+        vehicle: Some(gtfs_rt::VehiclePosition {
+            vehicle: None,
+            trip: None,
+            position: Some(gtfs_rt::Position {
+                latitude: mta.location.latitude,
+                longitude: mta.location.longitude,
+                bearing: mta.location.heading,
+                odometer: None,
+                speed: Some(mta.location.speed.unwrap_or(0.0) as f32 * 0.44704),
+            }),
+            current_stop_sequence: None,
+            stop_id: None,
+            current_status: None,
+            timestamp: Some(mta.location.timestamp as u64),
+            congestion_level: None,
+            occupancy_status: None
+        })
+    }).collect()
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     color_eyre::install()?;
@@ -137,6 +165,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let body = request.text().await.unwrap();
 
         let import_data: Vec<MtaTrain> = serde_json::from_str(body.as_str()).unwrap();
+
+        let vehiclepositions_lirr:Vec<gtfs_rt::FeedEntity> = convert(&import_data, "LIRR");
 
         //println!("{:?}", import_data);  
 
