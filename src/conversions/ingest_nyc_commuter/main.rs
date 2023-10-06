@@ -124,6 +124,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         println!("Inserted into Redis!");
 
+        let request = client.get("https://backend-unified.mylirr.org/locations?geometry=TRACK_TURF&railroad=BOTH")
+            .send()
+            .await
+            .unwrap();
+
         let time_left = 500 as f64 - (beginning.elapsed().as_millis() as f64);
 
         if time_left > 0.0 {
