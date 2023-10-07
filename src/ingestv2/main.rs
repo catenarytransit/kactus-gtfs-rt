@@ -8,15 +8,15 @@ use std::thread;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use termion::{color, style};
 extern crate color_eyre;
-use std::collections::hash_map::DefaultHasher;
 use fasthash::{metro, MetroHasher};
+use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
 extern crate rand;
 use crate::rand::prelude::SliceRandom;
-use protobuf::Message;
 use kactus::gtfs_realtime;
 use kactus::gtfs_realtime::FeedMessage;
+use protobuf::Message;
 
 extern crate csv;
 
@@ -61,20 +61,21 @@ struct OctaBit {
 }
 
 fn octa_compute_into_hash(feed: &FeedMessage) -> u64 {
-    let arrayofelements = feed.entity.iter()
-    .filter(|x| x.vehicle.is_some())
-    .map(|x| 
-        {
+    let arrayofelements = feed
+        .entity
+        .iter()
+        .filter(|x| x.vehicle.is_some())
+        .map(|x| {
             return OctaBit {
                 position: x.vehicle.clone().unwrap().position.unwrap(),
                 vehicle: x.vehicle.clone().unwrap().vehicle.unwrap(),
                 trip: x.vehicle.clone().unwrap().trip.unwrap(),
-        }
-        }
-    ).collect::<Vec<OctaBit>>();
+            };
+        })
+        .collect::<Vec<OctaBit>>();
 
-    let value = format!("{:?}",arrayofelements);
-    return metro::hash64(value);;
+    let value = format!("{:?}", arrayofelements);
+    return metro::hash64(value);
 }
 
 #[tokio::main]

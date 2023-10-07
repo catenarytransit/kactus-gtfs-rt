@@ -71,28 +71,29 @@ async fn main() {
             .await;
         }
 
-
         //added this section because thread looping apparently consumes the whole core
         //20% cpu usage on the crappy Intel NUC this program executes on
-        
-        let instant_comp = SystemTime::now().duration_since(UNIX_EPOCH).expect("Back to 1969?!?!!!");
-        if (last_veh_protobuf_timestamp.is_some()
-         && last_trip_protobuf_timestamp.is_some()) {
-            if (instant_comp.as_millis() - (last_veh_protobuf_timestamp.unwrap()*1000) < 57_000  &&
-            instant_comp.as_millis() - (last_trip_protobuf_timestamp.unwrap()*1000) < 57_000
-        ) {
-            let sleep_for = (std::cmp::min(
-                last_veh_protobuf_timestamp.unwrap(), last_trip_protobuf_timestamp.unwrap()
-        ) + 57) - instant_comp.as_secs() as u128;
 
-        if (sleep_for > 1) {
-            
-            println!("Sleeping for {}s",sleep_for);
+        let instant_comp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("Back to 1969?!?!!!");
+        if (last_veh_protobuf_timestamp.is_some() && last_trip_protobuf_timestamp.is_some()) {
+            if (instant_comp.as_millis() - (last_veh_protobuf_timestamp.unwrap() * 1000) < 57_000
+                && instant_comp.as_millis() - (last_trip_protobuf_timestamp.unwrap() * 1000)
+                    < 57_000)
+            {
+                let sleep_for = (std::cmp::min(
+                    last_veh_protobuf_timestamp.unwrap(),
+                    last_trip_protobuf_timestamp.unwrap(),
+                ) + 57)
+                    - instant_comp.as_secs() as u128;
 
-            std::thread::sleep(Duration::from_secs(sleep_for.try_into().unwrap()));
-        }
+                if (sleep_for > 1) {
+                    println!("Sleeping for {}s", sleep_for);
 
-        }
+                    std::thread::sleep(Duration::from_secs(sleep_for.try_into().unwrap()));
+                }
+            }
         }
     }
 }

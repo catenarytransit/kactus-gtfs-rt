@@ -1,13 +1,16 @@
-
-use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, HashMap};
-use rayon::prelude::*;
-use std::time::Instant;
-use protobuf::{CodedInputStream, Message as ProtobufMessage};
-use prost::Message;
-use std::time::UNIX_EPOCH;
 use gtfs_rt::EntitySelector;
 use gtfs_rt::TimeRange;
+use prost::Message;
+use protobuf::SpecialFields;
+use protobuf::{CodedInputStream, Message as ProtobufMessage};
+use rayon::prelude::*;
+use serde::{Deserialize, Serialize};
+use std::collections::{BTreeMap, HashMap};
+use std::time::Instant;
+use std::time::UNIX_EPOCH;
+
+use kactus::insert::insert_gtfs_rt;
+
 use serde_json;
 
 use redis::Commands;
@@ -21,7 +24,7 @@ pub struct TrainStatus {
     otp: i32,
     otp_location: String,
     held: bool,
-    canceled: bool
+    canceled: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -33,7 +36,7 @@ pub struct TrainCar {
     restroom: Option<bool>,
     revenue: Option<bool>,
     bikes: Option<i32>,
-    locomotive: bool
+    locomotive: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -43,7 +46,7 @@ pub struct TrainConsist {
     actual_len: Option<i32>,
     sched_len: Option<i32>,
     occupancy: Option<String>,
-    occupancy_timestamp: Option<i32>
+    occupancy_timestamp: Option<i32>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -55,13 +58,13 @@ pub struct TrainLocation {
     heading: Option<f32>,
     source: String,
     timestamp: i32,
-    extra_info: Option<String>
+    extra_info: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TrainTurf {
     length: f32,
-    location_mp: f32
+    location_mp: f32,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -90,7 +93,7 @@ pub struct TrainDetails {
     direction: String,
     turf: Option<TrainTurf>,
     //"PERMITTED" or "PROHIBITED"
-    bike_rule: String
+    bike_rule: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -102,57 +105,181 @@ pub struct MtaTrain {
     train_num: String,
     realtime: bool,
     details: TrainDetails,
-  consist: TrainConsist,
+    consist: TrainConsist,
     location: TrainLocation,
     status: TrainStatus,
 }
 
-fn convert(mta: &Vec<MtaTrain>,railroad: &str) -> Vec<gtfs_rt::FeedEntity> {
-    mta.par_iter().filter(|mta| mta.railroad.as_str() == railroad)
-    .map(|mta| gtfs_rt::FeedEntity {
-        id: mta.train_id.clone(),
-        is_deleted: None,
-        trip_update: None,
-        alert: None,
-        vehicle: Some(gtfs_rt::VehiclePosition {
-            vehicle: None,
-            trip: None,
-            position: Some(gtfs_rt::Position {
-                latitude: mta.location.latitude,
-                longitude: mta.location.longitude,
-                bearing: mta.location.heading,
-                odometer: None,
-                speed: Some(mta.location.speed.unwrap_or(0.0) as f32 * 0.44704),
-            }),
-            current_stop_sequence: None,
-            stop_id: None,
-            current_status: None,
-            timestamp: Some(mta.location.timestamp as u64),
-            congestion_level: None,
-            occupancy_status: None
+fn get_lirr_train_id(entity: &gtfs_rt::FeedEntity) -> String {
+    let mut train_id = String::from("");
+
+    if entity.vehicle.is_some() {
+        let vehicle = entity.vehicle.as_ref().unwrap();
+
+        if vehicle.trip.is_some() {
+            let trip = vehicle.trip.as_ref().unwrap();
+
+            if trip.trip_id.is_some() {
+                let pre_train_id = trip.trip_id.as_ref().unwrap().clone();
+
+                //split by underscore
+
+                let split: Vec<&str> = pre_train_id.split("_").collect();
+
+                //get last element
+
+                train_id = String::from(split[split.len() - 1]);
+            }
+        }
+    }
+
+    train_id
+}
+
+fn convert(
+    mta: &Vec<MtaTrain>,
+    railroad: &str,
+    input_gtfs_trips: &gtfs_rt::FeedMessage,
+) -> Vec<gtfs_rt::FeedEntity> {
+    mta.iter()
+        .filter(|mta| mta.railroad.as_str() == railroad)
+        .map(|mta| {
+            let mut supporting_gtfs: Option<gtfs_rt::FeedEntity> = None;
+
+            let candidates_for_id: Vec<gtfs_rt::FeedEntity> = input_gtfs_trips
+                .entity
+                .clone()
+                .into_iter()
+                .filter(|mta_entity| {
+                    let status: bool = match mta.railroad.as_str() {
+                        "MNR" => mta.train_num == mta_entity.id,
+                        "LIRR" => mta.train_num == get_lirr_train_id(&mta_entity),
+                        _ => false,
+                    };
+
+                    status
+                })
+                .collect::<Vec<gtfs_rt::FeedEntity>>();
+
+            if candidates_for_id.len() >= 1 {
+                supporting_gtfs = Some(candidates_for_id[0].clone());
+            }
+
+            if mta.railroad == "LIRR" {
+                //filter for vehicle only
+                let candidates_for_id = candidates_for_id
+                    .into_iter()
+                    .filter(|mta_entity| mta_entity.vehicle.is_some())
+                    .collect::<Vec<gtfs_rt::FeedEntity>>();
+
+                if candidates_for_id.len() >= 1 {
+                    supporting_gtfs = Some(candidates_for_id[0].clone());
+                }
+            }
+
+            (mta, supporting_gtfs)
         })
-    }).collect()
+        .map(|(mta, supporting_gtfs)| gtfs_rt::FeedEntity {
+            id: mta.train_id.clone(),
+            is_deleted: None,
+            trip_update: None,
+            alert: None,
+            vehicle: Some(gtfs_rt::VehiclePosition {
+                vehicle: match &supporting_gtfs {
+                    Some(supporting_gtfs) => {
+                        supporting_gtfs.clone().vehicle.unwrap().vehicle.clone()
+                    }
+                    None => None,
+                },
+                trip: match &supporting_gtfs {
+                    Some(supporting_gtfs) => supporting_gtfs.clone().vehicle.unwrap().trip.clone(),
+                    None => None,
+                },
+                position: Some(gtfs_rt::Position {
+                    latitude: mta.location.latitude,
+                    longitude: mta.location.longitude,
+                    bearing: mta.location.heading,
+                    odometer: None,
+                    speed: Some(mta.location.speed.unwrap_or(0.0) as f32 * 0.44704),
+                }),
+                current_stop_sequence: match &supporting_gtfs {
+                    Some(supporting_gtfs) => supporting_gtfs
+                        .clone()
+                        .vehicle
+                        .unwrap()
+                        .current_stop_sequence
+                        .clone(),
+                    None => None,
+                },
+                stop_id: match &supporting_gtfs {
+                    Some(supporting_gtfs) => {
+                        supporting_gtfs.clone().vehicle.unwrap().stop_id.clone()
+                    }
+                    None => None,
+                },
+                current_status: match &supporting_gtfs {
+                    Some(supporting_gtfs) => supporting_gtfs
+                        .clone()
+                        .vehicle
+                        .unwrap()
+                        .current_status
+                        .clone(),
+                    None => None,
+                },
+                timestamp: Some(mta.location.timestamp as u64),
+                congestion_level: None,
+                occupancy_status: None,
+            }),
+        })
+        .collect::<Vec<gtfs_rt::FeedEntity>>()
+}
+
+async fn get_mta_trips(client: &reqwest::Client, url: &str, api_key: &str) -> gtfs_rt::FeedMessage {
+    let bytes = client
+        .get(url)
+        .header("x-api-key", api_key)
+        .send()
+        .await
+        .unwrap()
+        .bytes()
+        .await
+        .unwrap()
+        .to_vec();
+
+    let decoded: gtfs_rt::FeedMessage = gtfs_rt::FeedMessage::decode(bytes.as_slice()).unwrap();
+
+    decoded
 }
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     color_eyre::install()?;
-   // curl https://transloc-api-1-2.p.rapidapi.com/vehicles.json?agencies=1039 
-   //-H "X-Mashape-Key: b0ebd9e8a5msh5aca234d74ce282p1737bbjsnddd18d7b9365"
+    // curl https://transloc-api-1-2.p.rapidapi.com/vehicles.json?agencies=1039
+    //-H "X-Mashape-Key: b0ebd9e8a5msh5aca234d74ce282p1737bbjsnddd18d7b9365"
 
-   let redisclient = RedisClient::open("redis://127.0.0.1:6379/").unwrap();
-   let mut con = redisclient.get_connection().unwrap();
+    let redisclient = RedisClient::open("redis://127.0.0.1:6379/").unwrap();
+    let mut con = redisclient.get_connection().unwrap();
 
     let client = reqwest::Client::new();
+
+    //exposed on purpose. I don't care.
+    let key = "hvThsOlHmP2XzvYWlKKC17YPcq07meIg2V2RPLbC";
+
+    const LIRR_TRIPS_FEED: &str =
+        "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/lirr%2Fgtfs-lirr";
+
+    const MNR_TRIPS_FEED: &str =
+        "https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/mnr%2Fgtfs-mnr";
 
     loop {
         //every 4 seconds
 
         let beginning = Instant::now();
 
-       // println!("Inserted into Redis!");
+        // println!("Inserted into Redis!");
 
-        let request = client.get("https://backend-unified.mylirr.org/locations?geometry=TRACK_TURF&railroad=BOTH")
+        let request = client
+            .get("https://backend-unified.mylirr.org/locations?geometry=TRACK_TURF&railroad=BOTH")
             .header("Accept-Version", "3.0")
             .send()
             .await
@@ -166,9 +293,53 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         let import_data: Vec<MtaTrain> = serde_json::from_str(body.as_str()).unwrap();
 
-        let vehiclepositions_lirr:Vec<gtfs_rt::FeedEntity> = convert(&import_data, "LIRR");
+        let input_gtfs_lirr = get_mta_trips(&client, LIRR_TRIPS_FEED, &key).await;
+        let input_gtfs_mnr = get_mta_trips(&client, MNR_TRIPS_FEED, &key).await;
 
-        //println!("{:?}", import_data);  
+        let vehiclepositions_lirr: Vec<gtfs_rt::FeedEntity> =
+            convert(&import_data, "LIRR", &input_gtfs_lirr);
+        let vehiclepositions_mnr: Vec<gtfs_rt::FeedEntity> =
+            convert(&import_data, "MNR", &input_gtfs_mnr);
+
+        insert_gtfs_rt(
+            &mut con,
+            &gtfs_rt::FeedMessage {
+                header: gtfs_rt::FeedHeader {
+                    gtfs_realtime_version: "2.0".to_string(),
+                    incrementality: Some(gtfs_rt::feed_header::Incrementality::FullDataset as i32),
+                    timestamp: Some(
+                        SystemTime::now()
+                            .duration_since(UNIX_EPOCH)
+                            .unwrap()
+                            .as_secs(),
+                    ),
+                },
+                entity: vehiclepositions_lirr,
+            },
+            &"f-mta~nyc~rt~lirr".to_string(),
+            &"vehicles".to_string(),
+        );
+
+        insert_gtfs_rt(
+            &mut con,
+            &gtfs_rt::FeedMessage {
+                header: gtfs_rt::FeedHeader {
+                    gtfs_realtime_version: "2.0".to_string(),
+                    incrementality: Some(gtfs_rt::feed_header::Incrementality::FullDataset as i32),
+                    timestamp: Some(
+                        SystemTime::now()
+                            .duration_since(UNIX_EPOCH)
+                            .unwrap()
+                            .as_secs(),
+                    ),
+                },
+                entity: vehiclepositions_mnr,
+            },
+            &"f-mta~nyc~rt~mnr".to_string(),
+            &"vehicles".to_string(),
+        );
+
+        //println!("{:?}", import_data);
 
         let time_left = 500 as f64 - (beginning.elapsed().as_millis() as f64);
 
