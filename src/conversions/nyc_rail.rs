@@ -21,8 +21,8 @@ use std::time::{Duration, SystemTime};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TrainStatus {
-    otp: i32,
-    otp_location: String,
+    otp: Option<i32>,
+    otp_location: Option<String>,
     held: bool,
     canceled: bool,
 }
