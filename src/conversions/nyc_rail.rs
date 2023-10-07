@@ -191,10 +191,19 @@ fn convert(
                     }
                     None => None,
                 },
-                trip: match &supporting_gtfs {
+                trip: match mta.railroad.as_str() {
+                    "MNR" => Some(gtfs_rt::TripDescriptor {
+                        trip_id: supporting_gtfs.clone().unwrap().vehicle.unwrap().trip.clone().unwrap().trip_id,
+                        route_id: supporting_gtfs.clone().unwrap().trip_update.unwrap().trip.route_id,
+                        start_time: supporting_gtfs.clone().unwrap().vehicle.unwrap().trip.clone().unwrap().start_time,
+                        start_date: supporting_gtfs.clone().unwrap().vehicle.unwrap().trip.clone().unwrap().start_date,
+                        schedule_relationship: supporting_gtfs.clone().unwrap().vehicle.unwrap().trip.clone().unwrap().schedule_relationship,
+                        direction_id: supporting_gtfs.clone().unwrap().vehicle.unwrap().trip.clone().unwrap().direction_id,
+                    }),
+                    _ => match &supporting_gtfs {
                     Some(supporting_gtfs) => supporting_gtfs.clone().vehicle.unwrap().trip.clone(),
                     None => None,
-                },
+                }},
                 position: Some(gtfs_rt::Position {
                     latitude: mta.location.latitude,
                     longitude: mta.location.longitude,
