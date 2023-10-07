@@ -192,14 +192,24 @@ fn convert(
                     None => None,
                 },
                 trip: match mta.railroad.as_str() {
-                    "MNR" => Some(gtfs_rt::TripDescriptor {
-                        trip_id: supporting_gtfs.clone().unwrap().vehicle.unwrap().trip.clone().unwrap().trip_id,
-                        route_id: supporting_gtfs.clone().unwrap().trip_update.unwrap().trip.route_id,
-                        start_time: supporting_gtfs.clone().unwrap().vehicle.unwrap().trip.clone().unwrap().start_time,
-                        start_date: supporting_gtfs.clone().unwrap().vehicle.unwrap().trip.clone().unwrap().start_date,
-                        schedule_relationship: supporting_gtfs.clone().unwrap().vehicle.unwrap().trip.clone().unwrap().schedule_relationship,
-                        direction_id: supporting_gtfs.clone().unwrap().vehicle.unwrap().trip.clone().unwrap().direction_id,
-                    }),
+                    "MNR" => {
+                        let mut trip = supporting_gtfs
+                            .clone()
+                            .unwrap()
+                            .vehicle
+                            .unwrap()
+                            .trip;
+
+                        
+
+                            if trip.is_some() {
+                                if supporting_gtfs.clone().unwrap().trip_update.is_some() {
+                                        trip.as_mut().unwrap().route_id = supporting_gtfs.clone().unwrap().trip_update.unwrap().trip.route_id;
+                                }
+                            }
+
+                        trip
+                    },
                     _ => match &supporting_gtfs {
                     Some(supporting_gtfs) => supporting_gtfs.clone().vehicle.unwrap().trip.clone(),
                     None => None,
