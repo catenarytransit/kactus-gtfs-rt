@@ -1,7 +1,5 @@
 use protobuf::Message;
 use redis::Commands;
-use redis::RedisError;
-use redis::{Client as RedisClient, RedisResult};
 use reqwest::Client as ReqwestClient;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use termion::{color, style};
