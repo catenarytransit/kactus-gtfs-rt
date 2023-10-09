@@ -184,6 +184,7 @@ fn convert(
             is_deleted: None,
             trip_update: None,
             alert: None,
+            shape: None,
             vehicle: Some(gtfs_rt::VehiclePosition {
                 vehicle: match &supporting_gtfs {
                     Some(supporting_gtfs) => {
@@ -270,6 +271,8 @@ fn convert(
                 timestamp: Some(mta.location.timestamp as u64),
                 congestion_level: None,
                 occupancy_status: None,
+                multi_carriage_details: vec![],
+                occupancy_percentage: None,
             }),
         })
         .collect::<Vec<gtfs_rt::FeedEntity>>()

@@ -9,13 +9,15 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use termion::{color, style};
 extern crate color_eyre;
 use fasthash::{metro, MetroHasher};
+
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
+
+use kactus::parse_protobuf_message;
+
 extern crate rand;
 use crate::rand::prelude::SliceRandom;
-use kactus::gtfs_realtime;
-use kactus::gtfs_realtime::FeedMessage;
 use protobuf::Message;
 
 extern crate csv;
@@ -55,12 +57,12 @@ struct Reqquery {
 
 #[derive(Debug, Clone)]
 struct OctaBit {
-    position: kactus::gtfs_realtime::Position,
-    vehicle: kactus::gtfs_realtime::VehicleDescriptor,
-    trip: kactus::gtfs_realtime::TripDescriptor,
+    position: gtfs_rt::Position,
+    vehicle: gtfs_rt::VehicleDescriptor,
+    trip: gtfs_rt::TripDescriptor,
 }
 
-fn octa_compute_into_hash(feed: &FeedMessage) -> u64 {
+fn octa_compute_into_hash(feed: &gtfs_rt::FeedMessage) -> u64 {
     let arrayofelements = feed
         .entity
         .iter()
@@ -420,8 +422,4 @@ fn convert_multiauth_to_vec(inputstring: &String) -> Option<Vec<String>> {
     } else {
         None
     }
-}
-
-fn parse_protobuf_message(bytes: &[u8]) -> Result<FeedMessage, protobuf::Error> {
-    return gtfs_realtime::FeedMessage::parse_from_bytes(bytes);
 }

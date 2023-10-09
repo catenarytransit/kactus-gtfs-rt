@@ -20,7 +20,7 @@ actix-web = "4"
 qstring = "0.7"
 protobuf-json-mapping = "3.2.0"
 protobuf = { version = "3.2.0", features = ["with-bytes"] }
-gtfs-rt = "0.3"
+gtfs-rt = {git = "https://github.com/CatenaryMaps/gtfs-rt.git"}
 serde_derive = "*"
 serde_json = "*"
 serde = "*"

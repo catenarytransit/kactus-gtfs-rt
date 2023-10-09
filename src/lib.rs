@@ -1,7 +1,14 @@
 #[macro_use]
 extern crate serde_derive;
-pub mod gtfs_realtime {
-    include!("./gtfs_realtime.rs");
+
+pub fn parse_protobuf_message(bytes: &[u8]) -> Result<gtfs_rt::FeedMessage, Box<dyn std::error::Error>> {
+    let x = prost::Message::decode(bytes);
+
+    if x.is_ok() {
+        return Ok(x.unwrap());
+    } else {
+        return Err(Box::new(x.unwrap_err()));
+    }
 }
 
 pub mod insert {

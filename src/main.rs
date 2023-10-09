@@ -13,13 +13,9 @@ use std::hash;
 use std::hash::{Hash, Hasher};
 use std::io::BufReader;
 use std::time::Instant;
+use kactus::parse_protobuf_message;
 
 use protobuf::{CodedInputStream, Message};
-
-use kactus::gtfs_realtime;
-use kactus::gtfs_realtime::FeedMessage;
-
-use protobuf_json_mapping::print_to_string;
 
 use serde::Serialize;
 
@@ -189,9 +185,7 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
     }
 }
 
-fn parse_protobuf_message(bytes: &[u8]) -> Result<FeedMessage, protobuf::Error> {
-    return gtfs_realtime::FeedMessage::parse_from_bytes(bytes);
-}
+
 
 async fn gtfsrttimes(req: HttpRequest) -> impl Responder {
     let redisclient = redis::Client::open("redis://127.0.0.1:6379/").unwrap();
@@ -292,7 +286,7 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
 
                                     match proto {
                                         Ok(proto) => {
-                                            let protojson = print_to_string(&proto).unwrap();
+                                            let protojson = format!("{:?}", &proto);
 
                                             HttpResponse::Ok()
                                                 .insert_header(("Content-Type", "application/json"))

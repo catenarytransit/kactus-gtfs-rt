@@ -6,9 +6,8 @@ use reqwest::Client as ReqwestClient;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use termion::{color, style};
 
-use kactus::gtfs_realtime;
-use kactus::gtfs_realtime::FeedMessage;
 
+use kactus::parse_protobuf_message;
 use std::fs;
 
 fn get_epoch_ms() -> u128 {
@@ -16,10 +15,6 @@ fn get_epoch_ms() -> u128 {
         .duration_since(UNIX_EPOCH)
         .unwrap()
         .as_millis()
-}
-
-fn parse_protobuf_message(bytes: &[u8]) -> Result<FeedMessage, protobuf::Error> {
-    return gtfs_realtime::FeedMessage::parse_from_bytes(bytes);
 }
 
 #[tokio::main]
