@@ -1,16 +1,10 @@
 use futures::StreamExt;
 use redis::Commands;
-use redis::RedisError;
-use redis::{Client as RedisClient, RedisResult};
 use reqwest::Client as ReqwestClient;
-use std::array;
-use std::thread;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use termion::{color, style};
 extern crate color_eyre;
-use std::collections::hash_map::DefaultHasher;
-use fasthash::{metro, MetroHasher};
-use std::hash::{Hash, Hasher};
+use fasthash::metro;
 
 extern crate rand;
 use crate::rand::prelude::SliceRandom;
@@ -20,7 +14,6 @@ use kactus::gtfs_realtime::FeedMessage;
 
 extern crate csv;
 
-use csv::Reader;
 use std::error::Error;
 use std::fs::File;
 use std::io::BufReader;
@@ -74,7 +67,7 @@ fn octa_compute_into_hash(feed: &FeedMessage) -> u64 {
     ).collect::<Vec<OctaBit>>();
 
     let value = format!("{:?}",arrayofelements);
-    return metro::hash64(value);;
+    return metro::hash64(value);
 }
 
 #[tokio::main]
@@ -192,7 +185,7 @@ async fn main() -> color_eyre::eyre::Result<()> {
         }
     }
 
-    let mut lastloop = Instant::now();
+    let mut lastloop;
 
     loop {
         lastloop = Instant::now();
@@ -289,10 +282,10 @@ async fn main() -> color_eyre::eyre::Result<()> {
                                                     &reqquery.onetrip, &reqquery.category
                                                 ));
 
-                                                if (old_data.is_ok()) {
+                                                if old_data.is_ok() {
                                                 let old_proto =  parse_protobuf_message(&old_data.unwrap());
 
-                                                if (new_proto.is_ok() && old_proto.is_ok()) {
+                                                if new_proto.is_ok() && old_proto.is_ok() {
                                                     println!("Comparing OCTA feeds");
                                                     let new_proto = new_proto.unwrap();
                                                     let old_proto = old_proto.unwrap();
@@ -300,7 +293,7 @@ async fn main() -> color_eyre::eyre::Result<()> {
                                                     let newhash = octa_compute_into_hash(&new_proto);
                                                     let oldhash = octa_compute_into_hash(&old_proto);
 
-                                                    if (newhash == oldhash) {
+                                                    if newhash == oldhash {
                                                         continue_run = false;
                                                         println!("Cancelled OCTA for having same hash");
                                                     }
@@ -351,7 +344,7 @@ async fn main() -> color_eyre::eyre::Result<()> {
                                         .unwrap();
                                         }
                                     }
-                                    Err(e) => {
+                                    Err(_) => {
                                         println!("error parsing bytes: {}", &reqquery.url);
                                     }
                                 }
