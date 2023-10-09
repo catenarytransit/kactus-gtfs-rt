@@ -14,11 +14,8 @@ pub fn parse_protobuf_message(bytes: &[u8]) -> Result<gtfs_rt::FeedMessage, Box<
 pub mod insert {
 
     use prost::Message;
-    use protobuf::{CodedInputStream, Message as ProtobufMessage};
-    use redis::Commands;
-    use redis::RedisError;
-    use redis::{Client as RedisClient, Connection, RedisResult};
-    use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+    use redis::{Commands, Connection};
+    use std::time::{SystemTime, UNIX_EPOCH};
 
     pub fn insert_gtfs_rt(
         con: &mut Connection,
@@ -32,7 +29,7 @@ pub mod insert {
             .as_millis()
             .to_string();
 
-        let bytes: Vec<u8> = data.encode_to_vec();
+        let bytes: Vec<u8> = data.header.gtfs_realtime_version.encode_to_vec();
 
         let _: () = con
             .set(format!("gtfsrt|{}|{}", &onetrip, &category), bytes.to_vec())
