@@ -5,15 +5,11 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use termion::{color, style};
 extern crate color_eyre;
 use fasthash::metro;
-
+use kactus::parse_protobuf_message;
 extern crate rand;
 use crate::rand::prelude::SliceRandom;
 use protobuf::Message;
-use kactus::gtfs_realtime;
-use kactus::gtfs_realtime::FeedMessage;
-
 extern crate csv;
-
 use std::error::Error;
 use std::fs::File;
 use std::io::BufReader;
@@ -48,23 +44,24 @@ struct Reqquery {
 
 #[derive(Debug, Clone)]
 struct OctaBit {
-    position: kactus::gtfs_realtime::Position,
-    vehicle: kactus::gtfs_realtime::VehicleDescriptor,
-    trip: kactus::gtfs_realtime::TripDescriptor,
+    position: gtfs_rt::Position,
+    vehicle: gtfs_rt::VehicleDescriptor,
+    trip: gtfs_rt::TripDescriptor,
 }
 
-fn octa_compute_into_hash(feed: &FeedMessage) -> u64 {
-    let arrayofelements = feed.entity.iter()
-    .filter(|x| x.vehicle.is_some())
-    .map(|x| 
-        {
+fn octa_compute_into_hash(feed: &gtfs_rt::FeedMessage) -> u64 {
+    let arrayofelements = feed
+        .entity
+        .iter()
+        .filter(|x| x.vehicle.is_some())
+        .map(|x| {
             return OctaBit {
                 position: x.vehicle.clone().unwrap().position.unwrap(),
                 vehicle: x.vehicle.clone().unwrap().vehicle.unwrap(),
                 trip: x.vehicle.clone().unwrap().trip.unwrap(),
-        }
-        }
-    ).collect::<Vec<OctaBit>>();
+            };
+        })
+        .collect::<Vec<OctaBit>>();
 
     let value = format!("{:?}",arrayofelements);
     return metro::hash64(value);
@@ -412,8 +409,4 @@ fn convert_multiauth_to_vec(inputstring: &String) -> Option<Vec<String>> {
     } else {
         None
     }
-}
-
-fn parse_protobuf_message(bytes: &[u8]) -> Result<FeedMessage, protobuf::Error> {
-    return gtfs_realtime::FeedMessage::parse_from_bytes(bytes);
 }
