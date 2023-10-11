@@ -286,7 +286,7 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
 
                                     match proto {
                                         Ok(proto) => {
-                                            let protojson = format!("{:?}", &proto);
+                                            let protojson = serde_json::to_string(&proto).unwrap();
 
                                             HttpResponse::Ok()
                                                 .insert_header(("Content-Type", "application/json"))
