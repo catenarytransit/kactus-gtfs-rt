@@ -264,6 +264,19 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
     let qs = QString::from(query_str);
     let feed = qs.get("feed");
 
+    let raw = qs.get("raw");
+
+    let usejson = match raw {
+        Some(raw) => {
+            if raw == "true" {
+                false
+            } else {
+                true
+            }
+        }
+        None => true,
+    };
+
     match feed {
         Some(feed) => {
             let category = qs.get("category");
@@ -286,11 +299,18 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
 
                                     match proto {
                                         Ok(proto) => {
-                                            let protojson = serde_json::to_string(&proto).unwrap();
+                                            if usejson {
+                                                let protojson = serde_json::to_string(&proto).unwrap();
 
                                             HttpResponse::Ok()
                                                 .insert_header(("Content-Type", "application/json"))
                                                 .body(protojson)
+                                            } else {
+                                                let protojson = format!("{:#?}", proto);
+
+                                            HttpResponse::Ok()
+                                                .body(protojson)
+                                            }
                                         }
                                         Err(proto) => {
                                             println!("Error parsing protobuf");
