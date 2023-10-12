@@ -6,20 +6,16 @@ use hyper::client;
 use redis::Commands;
 extern crate qstring;
 use csv::ReaderBuilder;
+use fasthash::{metro, MetroHasher};
 use qstring::QString;
 use std::fs::File;
 use std::hash;
 use std::hash::{Hash, Hasher};
-use fasthash::{metro, MetroHasher};
 use std::io::BufReader;
 use std::time::Instant;
+use kactus::parse_protobuf_message;
 
 use protobuf::{CodedInputStream, Message};
-
-use kactus::gtfs_realtime;
-use kactus::gtfs_realtime::FeedMessage;
-
-use protobuf_json_mapping::print_to_string;
 
 use serde::Serialize;
 
@@ -67,7 +63,6 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
 
                             match data {
                                 Ok(data) => {
-
                                     let suicidebutton = qs.get("suicidebutton");
 
                                     if suicidebutton.is_some() {
@@ -75,25 +70,27 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
 
                                         if suicidebutton == "true" {
                                             return HttpResponse::Ok()
-                                            .insert_header((
-                                                "Content-Type",
-                                                "application/x-google-protobuf",
-                                            ))
-                                            .body(data)
+                                                .insert_header((
+                                                    "Content-Type",
+                                                    "application/x-google-protobuf",
+                                                ))
+                                                .body(data);
+                                        }
                                     }
-                                }
 
                                     let timeofclientcache = qs.get("timeofcache");
 
                                     let proto = parse_protobuf_message(&data);
 
-                                    let hashofresult = fasthash::metro::hash64(format!("{:?}", (&proto).as_ref().unwrap().entity));
-                                    
+                                    let hashofresult = fasthash::metro::hash64(format!(
+                                        "{:?}",
+                                        (&proto).as_ref().unwrap().entity
+                                    ));
+
                                     if timeofclientcache.is_some() {
                                         let timeofclientcache = timeofclientcache.unwrap();
 
                                         let timeofclientcache = (*timeofclientcache).parse::<u64>();
-
 
                                         if timeofclientcache.is_ok() {
                                             let timeofclientcache = timeofclientcache.unwrap();
@@ -113,13 +110,9 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
                                                                 .body("");
                                                         }
                                                     }
-
-
-
                                                 }
                                                 Err(bruh) => {
-
-                                                    println!("{:#?}",bruh);
+                                                    println!("{:#?}", bruh);
 
                                                     let skipfailure = qs.get("skipfailure");
 
@@ -127,13 +120,13 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
 
                                                     if skipfailure.is_some() {
                                                         if skipfailure.unwrap() == "true" {
-                                                          allowcrash = false;
+                                                            allowcrash = false;
                                                         }
                                                     }
 
                                                     if allowcrash {
                                                         return HttpResponse::InternalServerError()
-                                                        .body("protobuf failed to parse");
+                                                            .body("protobuf failed to parse");
                                                     }
                                                 }
                                             }
@@ -147,8 +140,7 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
                                                 if clienthash.is_ok() {
                                                     let clienthash = clienthash.unwrap();
                                                     if clienthash == hashofresult {
-                                                        return HttpResponse::NoContent()
-                                                                .body("");
+                                                        return HttpResponse::NoContent().body("");
                                                     }
                                                 }
                                             }
@@ -160,7 +152,7 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
                                             "Content-Type",
                                             "application/x-google-protobuf",
                                         ))
-                                        .insert_header(("hash",hashofresult))
+                                        .insert_header(("hash", hashofresult))
                                         .body(data)
                                 }
                                 Err(e) => {
@@ -193,9 +185,7 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
     }
 }
 
-fn parse_protobuf_message(bytes: &[u8]) -> Result<FeedMessage, protobuf::Error> {
-    return gtfs_realtime::FeedMessage::parse_from_bytes(bytes);
-}
+
 
 async fn gtfsrttimes(req: HttpRequest) -> impl Responder {
     let redisclient = redis::Client::open("redis://127.0.0.1:6379/").unwrap();
@@ -274,6 +264,19 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
     let qs = QString::from(query_str);
     let feed = qs.get("feed");
 
+    let raw = qs.get("raw");
+
+    let usejson = match raw {
+        Some(raw) => {
+            if raw == "true" {
+                false
+            } else {
+                true
+            }
+        }
+        None => true,
+    };
+
     match feed {
         Some(feed) => {
             let category = qs.get("category");
@@ -296,11 +299,18 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
 
                                     match proto {
                                         Ok(proto) => {
-                                            let protojson = serde_json::to_string(&proto).unwrap();
+                                            if usejson {
+                                                let protojson = serde_json::to_string(&proto).unwrap();
 
                                             HttpResponse::Ok()
                                                 .insert_header(("Content-Type", "application/json"))
                                                 .body(protojson)
+                                            } else {
+                                                let protojson = format!("{:#?}", proto);
+
+                                            HttpResponse::Ok()
+                                                .body(protojson)
+                                            }
                                         }
                                         Err(proto) => {
                                             println!("Error parsing protobuf");
@@ -334,7 +344,7 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
                 .body("Error: No feed specified\n")
         }
     }
-} 
+}
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -345,7 +355,10 @@ async fn main() -> std::io::Result<()> {
                 DefaultHeaders::new()
                     .add(("Server", "Kactus"))
                     .add(("Access-Control-Allow-Origin", "*"))
-                    .add(("Access-Control-Expose-Headers", "Server, hash, server, Hash"))
+                    .add((
+                        "Access-Control-Expose-Headers",
+                        "Server, hash, server, Hash",
+                    )),
             )
             .route("/", web::get().to(index))
             .route("/gtfsrt/", web::get().to(gtfsrt))

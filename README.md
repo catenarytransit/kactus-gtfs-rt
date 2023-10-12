@@ -18,6 +18,13 @@ sudo systemctl start redis-server
 ```
 cargo run --bin ingestv2
 ```
+### Install Systemd Service
+```bash
+sudo cp systemd* /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now kactua* zotgtfsrt.service
+```
+
 ### Hosted by Kyler
 
 Use Kactus hosted by Kyler's servers! 
