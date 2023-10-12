@@ -315,7 +315,9 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
                                         Err(proto) => {
                                             println!("Error parsing protobuf");
 
-                                            HttpResponse::NotFound().body("Parse protobuf failed")
+                                            println!("{:#?}", proto);
+
+                                            HttpResponse::NotFound().body(format!("{:#?}", proto))
                                         }
                                     }
                                 }
