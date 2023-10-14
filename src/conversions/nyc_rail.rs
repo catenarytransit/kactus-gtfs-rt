@@ -1,11 +1,11 @@
-use gtfs_rt::EntitySelector;
-use gtfs_rt::TimeRange;
+
+
 use prost::Message;
-use protobuf::SpecialFields;
-use protobuf::{CodedInputStream, Message as ProtobufMessage};
+
+use protobuf::{Message as ProtobufMessage};
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, HashMap};
+
 use std::time::Instant;
 use std::time::UNIX_EPOCH;
 
@@ -14,10 +14,10 @@ use kactus::insert::insert_gtfs_rt;
 use serde_json;
 
 use redis::Commands;
-use redis::RedisError;
-use redis::{Client as RedisClient, RedisResult};
 
-use std::time::{Duration, SystemTime};
+use redis::{Client as RedisClient};
+
+use std::time::{SystemTime};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TrainStatus {
