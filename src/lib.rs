@@ -29,7 +29,7 @@ pub mod insert {
             .as_millis()
             .to_string();
 
-        let bytes: Vec<u8> = data.header.gtfs_realtime_version.encode_to_vec();
+        let bytes: Vec<u8> = data.encode_to_vec();
 
         let _: () = con
             .set(format!("gtfsrt|{}|{}", &onetrip, &category), bytes.to_vec())
