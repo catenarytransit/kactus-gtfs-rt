@@ -28,7 +28,7 @@ sudo systemctl enable --now kactua* zotgtfsrt.service
 ### Hosted by Kyler
 
 Use Kactus hosted by Kyler's servers! 
-`https://kactusapi.kylerchin.com/gtfsrt/?feed=[onestopid]&category=[category]`
+`https://kactus.catenarymaps.org/gtfsrt/?feed=[onestopid]&category=[category]`
 
 Check uptime: https://stats.uptimerobot.com/xWx7zCm4p0
 
@@ -41,7 +41,7 @@ Valid categories are
 
 The api returns 404 if the category for the feed doesn't exist.
 
-Example of valid url `https://kactusapi.kylerchin.com/gtfsrt/?feed=f-metro~losangeles~bus~rt&category=vehicles`
+Example of valid url `https://kactus.catenarymaps.org/gtfsrt/?feed=f-metro~losangeles~bus~rt&category=vehicles`
 
 ### urls.csv config
 If the auth_type is set to `url`, then any instance of `PASSWORD` in the urls will be replaced with the value of auth_password
