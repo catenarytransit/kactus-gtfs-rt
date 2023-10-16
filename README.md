@@ -27,7 +27,7 @@ sudo systemctl enable --now kactua* zotgtfsrt.service
 
 ### Hosted by Kyler
 
-Use Kactus hosted by Kyler's servers! 
+Use Kactus hosted by Catenary's servers! 
 `https://kactus.catenarymaps.org/gtfsrt/?feed=[onestopid]&category=[category]`
 
 Check uptime: https://stats.uptimerobot.com/xWx7zCm4p0
