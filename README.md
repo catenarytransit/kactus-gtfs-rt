@@ -26,12 +26,12 @@ Example of valid url `https://kactus.catenarymaps.org/gtfsrt/?feed=f-metro~losan
 The list of avaliable feeds is at `https://kactus.catenarymaps.org/gtfsrttimes`
 
 #### Debugging by hand
-`https://kactusapi.kylerchin.com/gtfsrtasjson/?feed=[onestopid]&category=[category]`
+`https://kactus.catenarymaps.org/gtfsrtasjson/?feed=[onestopid]&category=[category]`
 
 or use raw for Rust-info
-`https://kactusapi.kylerchin.com/gtfsrtasjson/?feed=[onestopid]&category=[category]&raw=true`
+`https://kactus.catenarymaps.org/gtfsrtasjson/?feed=[onestopid]&category=[category]&raw=true`
 like so
-`https://kactusapi.kylerchin.com/gtfsrtasjson/?feed=f-metro~losangeles~bus~rt&category=vehicles&raw=true`
+`https://kactus.catenarymaps.org/gtfsrtasjson/?feed=f-metro~losangeles~bus~rt&category=vehicles&raw=true`
 
 # Installation
 
