@@ -43,6 +43,10 @@ The api returns 404 if the category for the feed doesn't exist.
 
 Example of valid url `https://kactus.catenarymaps.org/gtfsrt/?feed=f-metro~losangeles~bus~rt&category=vehicles`
 
+#### Knowing valid feeds and categories
+
+The list of avaliable feeds is at `https://kactus.catenarymaps.org/gtfsrttimes`
+
 ### urls.csv config
 If the auth_type is set to `url`, then any instance of `PASSWORD` in the urls will be replaced with the value of auth_password
 
