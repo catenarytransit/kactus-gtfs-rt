@@ -17,7 +17,7 @@ fn get_epoch_ms() -> u128 {
 
 #[tokio::main]
 async fn main() {
-    let metrolink_key = fs::read_to_string("./metrolink-key.txt")
+    let metrolink_key = fs::read_to_string("./metrolink-keys.txt")
         .expect("Unable to read file metrolink-key.txt")
         .trim()
         .to_string();
