@@ -3,28 +3,6 @@
 Kactus (Kyler's Automated Cache for Transport Unification & Synchronisation) is a cache server written in Rust and using Redis. It is open source under the GPL 3.0 license. Please submit issues &
 pull requests!
 
-## Install dependencies
-arch linux:
-```
-sudo pacman -S redis protobuf-compiler; sudo systemctl start redis-server;
-```
-ubuntu:
-```
-sudo apt install redis protobuf-compiler
-sudo systemctl start redis-server
-```
-
-### Run the ingest engine
-```
-cargo run --bin ingestv2
-```
-### Install Systemd Service
-```bash
-sudo cp systemd* /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable --now kactua* zotgtfsrt.service
-```
-
 ### Hosted by Kyler
 
 Use Kactus hosted by Catenary's servers! 
@@ -46,6 +24,39 @@ Example of valid url `https://kactus.catenarymaps.org/gtfsrt/?feed=f-metro~losan
 #### Knowing valid feeds and categories
 
 The list of avaliable feeds is at `https://kactus.catenarymaps.org/gtfsrttimes`
+
+#### Debugging by hand
+`https://kactus.catenarymaps.org/gtfsrtasjson/?feed=[onestopid]&category=[category]`
+
+or use raw for Rust-info
+`https://kactus.catenarymaps.org/gtfsrtasjson/?feed=[onestopid]&category=[category]&raw=true`
+like so
+`https://kactus.catenarymaps.org/gtfsrtasjson/?feed=f-metro~losangeles~bus~rt&category=vehicles&raw=true`
+
+# Installation
+
+
+## Install dependencies
+arch linux:
+```
+sudo pacman -S redis protobuf-compiler; sudo systemctl start redis-server;
+```
+ubuntu:
+```
+sudo apt install redis protobuf-compiler
+sudo systemctl start redis-server
+```
+
+### Run the ingest engine
+```
+cargo run --bin ingestv2
+```
+### Install Systemd Service
+```bash
+sudo cp systemd* /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now kactua* zotgtfsrt.service
+```
 
 ### urls.csv config
 If the auth_type is set to `url`, then any instance of `PASSWORD` in the urls will be replaced with the value of auth_password

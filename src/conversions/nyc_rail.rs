@@ -75,7 +75,7 @@ pub struct TrainStop {
     avps_track_id: Option<String>,
     posted: bool,
     t2s_track: String,
-    stop_status: String,
+    stop_status: Option<String>,
     stop_type: String,
     track_change: Option<bool>,
     local_cancel: Option<bool>,
