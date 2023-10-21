@@ -45,3 +45,7 @@ path = "src/ingestv2/metrolink.rs"
 [[bin]]
 name = "ingest_mtarail"
 path = "src/conversions/nyc_rail.rs"
+
+[[bin]]
+name = "ingestdoublemap"
+path = "src/conversions/doublemap/main.rs"
