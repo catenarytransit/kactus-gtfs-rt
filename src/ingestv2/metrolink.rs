@@ -145,7 +145,7 @@ async fn runcategory(
 
     match response {
         Ok(response) => {
-            //if 429 response, freeze the program for 20 seconds
+            //if 429 response, freeze the program for 30 seconds
 
             if response.status().is_client_error() {
                 println!(
@@ -154,7 +154,7 @@ async fn runcategory(
                     style::Reset
                 );
 
-                std::thread::sleep(Duration::from_millis(20_000));
+                std::thread::sleep(Duration::from_millis(30_000));
             }
 
             if response.status().is_success() {

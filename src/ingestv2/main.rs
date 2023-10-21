@@ -8,7 +8,6 @@ use fasthash::metro;
 use kactus::parse_protobuf_message;
 extern crate rand;
 use crate::rand::prelude::SliceRandom;
-use protobuf::Message;
 extern crate csv;
 use std::error::Error;
 use std::fs::File;
@@ -238,7 +237,7 @@ async fn main() -> color_eyre::eyre::Result<()> {
                         None => reqquery.auth_password.clone(),
                     };
 
-                    if !passwordtouse.is_empty() && reqquery.auth_type == "url" {
+                    if !passwordtouse.is_empty() && reqquery.auth_type == "query_param" {
                         urltouse = urltouse.replace("PASSWORD", &passwordtouse);
                     }
 

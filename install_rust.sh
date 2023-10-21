@@ -19,4 +19,3 @@ ln -sf /opt/rust/bin/rust-gdbgui /usr/local/bin/rust-gdbgui
 ln -sf /opt/rust/bin/rust-lldb /usr/local/bin/rust-lldb
 ln -sf /opt/rust/bin/rustup /usr/local/bin/rustup
 source "/opt/rust/env"
-
