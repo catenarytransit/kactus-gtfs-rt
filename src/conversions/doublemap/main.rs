@@ -100,57 +100,72 @@ async fn main() {
             let stops_parsed: Vec<DoubleMapStop> =
                 serde_json::from_str(&stops.unwrap().text().await.unwrap()).unwrap();
 
-            let routes_parsed: Vec<DoubleMapStop> =
+            let routes_parsed: Vec<DoubleMapRoute> =
                 serde_json::from_str(&routes.unwrap().text().await.unwrap()).unwrap();
 
-            let vehicles_parsed: Vec<DoubleMapRoute> =
+            let vehicles_parsed: Vec<DoubleMapBus> =
                 serde_json::from_str(&vehicles.unwrap().text().await.unwrap()).unwrap();
 
             println!("Vehicles: {:#?}", vehicles_parsed);
 
-            let doublemap_routes_to_static: HashMap<i32, Option<&RouteOutPostgres>> =
+            let doublemap_routes_to_static: HashMap<i32, Option<String>> =
                 HashMap::from_iter(routes_parsed.into_iter().map(|route_original| {
                     let route = routes_static_parsed
                         .iter()
-                        .find(|route_static| route_static.short_name == route_original.short_name);
+                        .find(|route_static| route_static.short_name == *(route_original.short_name.as_ref().unwrap()));
 
                     match route {
-                        Some(route) => (route_original.id, Some(route)),
+                        Some(route) => (route_original.id, Some(route.route_id.clone())),
                         None => {(route_original.id, None)}
                     }
                 }));
 
             let mut feed_entities: Vec<FeedEntity> = Vec::from_iter(vehicles_parsed.into_iter().map(|doublemap_vehicle| 
                 FeedEntity {
+                    is_deleted: Some(false),
+                    shape: None,
                     id: doublemap_vehicle.id.to_string(),
                     vehicle: Some(VehiclePosition {
-                        trip: None,
+                        occupancy_percentage: None,
+                        multi_carriage_details: vec![],
+                        trip: Some(
+                            gtfs_rt::TripDescriptor {
+                                route_id: doublemap_routes_to_static.get(&doublemap_vehicle.route.unwrap()).unwrap().clone(),
+                                start_time: None,
+                                start_date: None,
+                                schedule_relationship: None,
+                                trip_id: Some(doublemap_vehicle.id.to_string()),
+                                direction_id: None,
+                            }
+                        ),
                         vehicle: Some(gtfs_rt::VehicleDescriptor {
                             id: Some(doublemap_vehicle.name.to_string()),
                             label: Some(doublemap_vehicle.name),
                             license_plate: None,
+                            wheelchair_accessible: None,
                         }),
                         position: Some(gtfs_rt::Position {
-                            latitude: doublemap_vehicle.lat as f64,
-                            longitude: doublemap_vehicle.lon as f64,
-                            bearing: Some(doublemap_vehicle.heading as f64),
+                            latitude: doublemap_vehicle.lat,
+                            longitude: doublemap_vehicle.lon,
+                            bearing: Some(doublemap_vehicle.heading),
                             speed: None,
+                            odometer: None,
                         }),
                         current_stop_sequence: None,
                         stop_id: None,
                         current_status: None,
-                        timestamp: Some(doublemap_vehicle.last_update),
+                        timestamp: Some(doublemap_vehicle.last_update.try_into().unwrap()),
                         congestion_level: None,
                         occupancy_status: None,
                     }),
                     trip_update: None,
-                    vehicle_position: None,
                     alert: None,
                 }
-            ))
+            ));
         };
-    }
-
+        
     // Sleep for 0.5 seconds
     thread::sleep(Duration::from_millis(500));
+    }
+
 }
