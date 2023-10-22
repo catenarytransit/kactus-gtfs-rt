@@ -4,6 +4,9 @@ use reqwest::Client as ReqwestClient;
 use std::collections::HashMap;
 use std::thread;
 use std::time::Duration;
+use std::time::SystemTime;
+use redis::Commands;
+use kactus::insert::insert_gtfs_rt;
 
 #[derive(serde::Deserialize, Debug)]
 struct DoubleMapStop {
@@ -68,6 +71,10 @@ struct DoubleMapRoute {
 async fn main() {
     let client = ReqwestClient::new();
 
+    let redisclient = redis::Client::open("redis://127.0.0.1:6379/").unwrap();
+    let mut con = redisclient.get_connection().unwrap();
+
+
     let routes_static = client
         .get("https://backend.catenarymaps.org/getroutesperagency?feed_id=f-c3j-757")
         .send()
@@ -120,7 +127,7 @@ async fn main() {
                     }
                 }));
 
-            let mut feed_entities: Vec<FeedEntity> = Vec::from_iter(vehicles_parsed.into_iter().map(|doublemap_vehicle| 
+            let feed_entities: Vec<FeedEntity> = Vec::from_iter(vehicles_parsed.into_iter().map(|doublemap_vehicle| 
                 FeedEntity {
                     is_deleted: Some(false),
                     shape: None,
@@ -162,6 +169,24 @@ async fn main() {
                     alert: None,
                 }
             ));
+
+            let vehicle_feed: gtfs_rt::FeedMessage = gtfs_rt::FeedMessage {
+                header: gtfs_rt::FeedHeader {
+                    gtfs_realtime_version: "2.0".to_string(),incrementality: None,
+                    timestamp: Some(SystemTime::now()
+                    .duration_since(SystemTime::UNIX_EPOCH)
+                    .unwrap()
+                    .as_secs()),
+                },
+                entity: feed_entities,
+            };
+
+            insert_gtfs_rt(
+                &mut con,
+                &vehicle_feed,
+                &"f-roamtransit~rt".to_string(),
+                &"vehicle".to_string(),
+            );
         };
         
     // Sleep for 0.5 seconds
