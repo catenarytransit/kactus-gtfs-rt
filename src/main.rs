@@ -7,13 +7,13 @@ use redis::Commands;
 extern crate qstring;
 use csv::ReaderBuilder;
 use fasthash::{metro, MetroHasher};
+use kactus::parse_protobuf_message;
 use qstring::QString;
 use std::fs::File;
 use std::hash;
 use std::hash::{Hash, Hasher};
 use std::io::BufReader;
 use std::time::Instant;
-use kactus::parse_protobuf_message;
 
 use protobuf::{CodedInputStream, Message};
 
@@ -185,8 +185,6 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
     }
 }
 
-
-
 async fn gtfsrttimes(req: HttpRequest) -> impl Responder {
     let redisclient = redis::Client::open("redis://127.0.0.1:6379/").unwrap();
     let mut con = redisclient.get_connection().unwrap();
@@ -300,16 +298,19 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
                                     match proto {
                                         Ok(proto) => {
                                             if usejson {
-                                                let protojson = serde_json::to_string(&proto).unwrap();
+                                                let protojson =
+                                                    serde_json::to_string(&proto).unwrap();
 
-                                            HttpResponse::Ok()
-                                                .insert_header(("Content-Type", "application/json"))
-                                                .body(protojson)
+                                                HttpResponse::Ok()
+                                                    .insert_header((
+                                                        "Content-Type",
+                                                        "application/json",
+                                                    ))
+                                                    .body(protojson)
                                             } else {
                                                 let protojson = format!("{:#?}", proto);
 
-                                            HttpResponse::Ok()
-                                                .body(protojson)
+                                                HttpResponse::Ok().body(protojson)
                                             }
                                         }
                                         Err(proto) => {

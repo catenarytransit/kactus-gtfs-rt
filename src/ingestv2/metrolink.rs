@@ -4,7 +4,6 @@ use reqwest::Client as ReqwestClient;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use termion::{color, style};
 
-
 use kactus::parse_protobuf_message;
 use std::fs;
 

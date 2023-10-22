@@ -1,7 +1,9 @@
 #[macro_use]
 extern crate serde_derive;
 
-pub fn parse_protobuf_message(bytes: &[u8]) -> Result<gtfs_rt::FeedMessage, Box<dyn std::error::Error>> {
+pub fn parse_protobuf_message(
+    bytes: &[u8],
+) -> Result<gtfs_rt::FeedMessage, Box<dyn std::error::Error>> {
     let x = prost::Message::decode(bytes);
 
     if x.is_ok() {

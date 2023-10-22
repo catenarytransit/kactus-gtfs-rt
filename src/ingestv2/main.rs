@@ -62,7 +62,7 @@ fn octa_compute_into_hash(feed: &gtfs_rt::FeedMessage) -> u64 {
         })
         .collect::<Vec<OctaBit>>();
 
-    let value = format!("{:?}",arrayofelements);
+    let value = format!("{:?}", arrayofelements);
     return metro::hash64(value);
 }
 
