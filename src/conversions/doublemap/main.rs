@@ -1,12 +1,12 @@
 use gtfs_rt::FeedEntity;
 use gtfs_rt::VehiclePosition;
+use kactus::insert::insert_gtfs_rt;
+use redis::Commands;
 use reqwest::Client as ReqwestClient;
 use std::collections::HashMap;
 use std::thread;
 use std::time::Duration;
 use std::time::SystemTime;
-use redis::Commands;
-use kactus::insert::insert_gtfs_rt;
 
 #[derive(serde::Deserialize, Debug)]
 struct DoubleMapStop {
@@ -74,7 +74,6 @@ async fn main() {
     let redisclient = redis::Client::open("redis://127.0.0.1:6379/").unwrap();
     let mut con = redisclient.get_connection().unwrap();
 
-
     let routes_static = client
         .get("https://backend.catenarymaps.org/getroutesperagency?feed_id=f-c3j-757")
         .send()
@@ -117,66 +116,71 @@ async fn main() {
 
             let doublemap_routes_to_static: HashMap<i32, Option<String>> =
                 HashMap::from_iter(routes_parsed.into_iter().map(|route_original| {
-                    let route = routes_static_parsed
-                        .iter()
-                        .find(|route_static| route_static.short_name == *(route_original.short_name.as_ref().unwrap()));
+                    let route = routes_static_parsed.iter().find(|route_static| {
+                        route_static.short_name == *(route_original.short_name.as_ref().unwrap())
+                    });
 
                     match route {
                         Some(route) => (route_original.id, Some(route.route_id.clone())),
-                        None => {(route_original.id, None)}
+                        None => (route_original.id, None),
                     }
                 }));
 
-            let feed_entities: Vec<FeedEntity> = Vec::from_iter(vehicles_parsed.into_iter().map(|doublemap_vehicle| 
-                FeedEntity {
-                    is_deleted: Some(false),
-                    shape: None,
-                    id: doublemap_vehicle.id.to_string(),
-                    vehicle: Some(VehiclePosition {
-                        occupancy_percentage: None,
-                        multi_carriage_details: vec![],
-                        trip: Some(
-                            gtfs_rt::TripDescriptor {
-                                route_id: doublemap_routes_to_static.get(&doublemap_vehicle.route.unwrap()).unwrap().clone(),
+            let feed_entities: Vec<FeedEntity> =
+                Vec::from_iter(vehicles_parsed.into_iter().map(|doublemap_vehicle| {
+                    FeedEntity {
+                        is_deleted: Some(false),
+                        shape: None,
+                        id: doublemap_vehicle.id.to_string(),
+                        vehicle: Some(VehiclePosition {
+                            occupancy_percentage: None,
+                            multi_carriage_details: vec![],
+                            trip: Some(gtfs_rt::TripDescriptor {
+                                route_id: doublemap_routes_to_static
+                                    .get(&doublemap_vehicle.route.unwrap())
+                                    .unwrap()
+                                    .clone(),
                                 start_time: None,
                                 start_date: None,
                                 schedule_relationship: None,
                                 trip_id: Some(doublemap_vehicle.id.to_string()),
                                 direction_id: None,
-                            }
-                        ),
-                        vehicle: Some(gtfs_rt::VehicleDescriptor {
-                            id: Some(doublemap_vehicle.name.to_string()),
-                            label: Some(doublemap_vehicle.name),
-                            license_plate: None,
-                            wheelchair_accessible: None,
+                            }),
+                            vehicle: Some(gtfs_rt::VehicleDescriptor {
+                                id: Some(doublemap_vehicle.name.to_string()),
+                                label: Some(doublemap_vehicle.name),
+                                license_plate: None,
+                                wheelchair_accessible: None,
+                            }),
+                            position: Some(gtfs_rt::Position {
+                                latitude: doublemap_vehicle.lat,
+                                longitude: doublemap_vehicle.lon,
+                                bearing: Some(doublemap_vehicle.heading),
+                                speed: None,
+                                odometer: None,
+                            }),
+                            current_stop_sequence: None,
+                            stop_id: None,
+                            current_status: None,
+                            timestamp: Some(doublemap_vehicle.last_update.try_into().unwrap()),
+                            congestion_level: None,
+                            occupancy_status: None,
                         }),
-                        position: Some(gtfs_rt::Position {
-                            latitude: doublemap_vehicle.lat,
-                            longitude: doublemap_vehicle.lon,
-                            bearing: Some(doublemap_vehicle.heading),
-                            speed: None,
-                            odometer: None,
-                        }),
-                        current_stop_sequence: None,
-                        stop_id: None,
-                        current_status: None,
-                        timestamp: Some(doublemap_vehicle.last_update.try_into().unwrap()),
-                        congestion_level: None,
-                        occupancy_status: None,
-                    }),
-                    trip_update: None,
-                    alert: None,
-                }
-            ));
+                        trip_update: None,
+                        alert: None,
+                    }
+                }));
 
             let vehicle_feed: gtfs_rt::FeedMessage = gtfs_rt::FeedMessage {
                 header: gtfs_rt::FeedHeader {
-                    gtfs_realtime_version: "2.0".to_string(),incrementality: None,
-                    timestamp: Some(SystemTime::now()
-                    .duration_since(SystemTime::UNIX_EPOCH)
-                    .unwrap()
-                    .as_secs()),
+                    gtfs_realtime_version: "2.0".to_string(),
+                    incrementality: None,
+                    timestamp: Some(
+                        SystemTime::now()
+                            .duration_since(SystemTime::UNIX_EPOCH)
+                            .unwrap()
+                            .as_secs(),
+                    ),
                 },
                 entity: feed_entities,
             };
@@ -188,9 +192,8 @@ async fn main() {
                 &"vehicle".to_string(),
             );
         };
-        
-    // Sleep for 0.5 seconds
-    thread::sleep(Duration::from_millis(500));
-    }
 
+        // Sleep for 0.5 seconds
+        thread::sleep(Duration::from_millis(500));
+    }
 }

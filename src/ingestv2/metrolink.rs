@@ -4,9 +4,9 @@ use reqwest::Client as ReqwestClient;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use termion::{color, style};
 
+use kactus::insert::insert_gtfs_rt_bytes;
 use kactus::parse_protobuf_message;
 use std::fs;
-use kactus::insert::insert_gtfs_rt_bytes;
 
 fn get_epoch_ms() -> u128 {
     SystemTime::now()
@@ -180,7 +180,12 @@ async fn runcategory(
 
                                     let feed_id = String::from("f-metrolinktrains~rt");
 
-                                    insert_gtfs_rt_bytes(&mut con, &bytes, &feed_id, &category.to_string());
+                                    insert_gtfs_rt_bytes(
+                                        &mut con,
+                                        &bytes,
+                                        &feed_id,
+                                        &category.to_string(),
+                                    );
                                 }
                                 None => {
                                     println!("{} Protobuf missing timestamp", &category);

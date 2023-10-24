@@ -23,33 +23,32 @@ pub mod insert {
         con: &mut Connection,
         bytes: &Vec<u8>,
         onetrip: &String,
-        category: &String
+        category: &String,
     ) {
         let now_millis = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_millis()
-        .to_string();
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_millis()
+            .to_string();
 
         let _: () = con
-        .set(format!("gtfsrt|{}|{}", &onetrip, &category), bytes)
-        .unwrap();
+            .set(format!("gtfsrt|{}|{}", &onetrip, &category), bytes)
+            .unwrap();
 
         inserttimes(con, &onetrip, &category, &now_millis);
     }
 
-    fn inserttimes(con: &mut Connection, onetrip:&String, category:&String, now_millis:&String) {
+    fn inserttimes(con: &mut Connection, onetrip: &String, category: &String, now_millis: &String) {
+        let _: () = con
+            .set(
+                format!("gtfsrttime|{}|{}", &onetrip, &category),
+                &now_millis,
+            )
+            .unwrap();
 
         let _: () = con
-        .set(
-            format!("gtfsrttime|{}|{}", &onetrip, &category),
-            &now_millis,
-        )
-        .unwrap();
-
-    let _: () = con
-        .set(format!("gtfsrtexists|{}", &onetrip), &now_millis)
-        .unwrap();
+            .set(format!("gtfsrtexists|{}", &onetrip), &now_millis)
+            .unwrap();
     }
 
     pub fn insert_gtfs_rt(
@@ -70,6 +69,6 @@ pub mod insert {
             .set(format!("gtfsrt|{}|{}", &onetrip, &category), bytes.to_vec())
             .unwrap();
 
-            inserttimes(con, &onetrip, &category, &now_millis);
+        inserttimes(con, &onetrip, &category, &now_millis);
     }
 }
