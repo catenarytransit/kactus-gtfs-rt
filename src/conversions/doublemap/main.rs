@@ -103,7 +103,7 @@ async fn main() {
         }
 
         if vehicles.is_ok() && stops.is_ok() && routes.is_ok() {
-            let stops_parsed: Vec<DoubleMapStop> =
+            let _stops_parsed: Vec<DoubleMapStop> =
                 serde_json::from_str(&stops.unwrap().text().await.unwrap()).unwrap();
 
             let routes_parsed: Vec<DoubleMapRoute> =

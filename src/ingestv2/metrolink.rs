@@ -23,11 +23,11 @@ async fn main() {
         .to_string();
 
     let arguments = std::env::args();
-    let arguments = arguments::parse(arguments).unwrap();
+    let _arguments = arguments::parse(arguments).unwrap();
 
     let client = ReqwestClient::new();
     let redisclient = redis::Client::open("redis://127.0.0.1:6379/").unwrap();
-    let mut con = redisclient.get_connection().unwrap();
+    let _con = redisclient.get_connection().unwrap();
 
     let mut last_veh_attempt: Option<Instant> = None;
     let mut last_trip_attempt: Option<Instant> = None;
@@ -70,10 +70,10 @@ async fn main() {
         let instant_comp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .expect("Back to 1969?!?!!!");
-        if (last_veh_protobuf_timestamp.is_some() && last_trip_protobuf_timestamp.is_some()) {
-            if (instant_comp.as_millis() - (last_veh_protobuf_timestamp.unwrap() * 1000) < 57_000
+        if last_veh_protobuf_timestamp.is_some() && last_trip_protobuf_timestamp.is_some() {
+            if instant_comp.as_millis() - (last_veh_protobuf_timestamp.unwrap() * 1000) < 57_000
                 && instant_comp.as_millis() - (last_trip_protobuf_timestamp.unwrap() * 1000)
-                    < 57_000)
+                    < 57_000
             {
                 let sleep_for = (std::cmp::min(
                     last_veh_protobuf_timestamp.unwrap(),
@@ -81,7 +81,7 @@ async fn main() {
                 ) + 57)
                     - instant_comp.as_secs() as u128;
 
-                if (sleep_for > 1) {
+                if sleep_for > 1 {
                     println!("Sleeping for {}s", sleep_for);
 
                     std::thread::sleep(Duration::from_secs(sleep_for.try_into().unwrap()));
@@ -191,12 +191,12 @@ async fn runcategory(
                                     println!("{} Protobuf missing timestamp", &category);
                                 }
                             },
-                            Err(e) => {
+                            Err(_e) => {
                                 println!("{} Cannot interpret protobuf", category);
                             }
                         }
                     }
-                    Err(err) => {
+                    Err(_err) => {
                         println!("{} Failed to convert bytes", category)
                     }
                 }
