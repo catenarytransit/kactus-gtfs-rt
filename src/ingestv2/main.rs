@@ -8,6 +8,7 @@ use fasthash::metro;
 use kactus::parse_protobuf_message;
 extern crate rand;
 use crate::rand::prelude::SliceRandom;
+use kactus::insert::insert_gtfs_rt_bytes;
 extern crate csv;
 use std::error::Error;
 use std::fs::File;
@@ -301,43 +302,7 @@ async fn main() -> color_eyre::eyre::Result<()> {
 
                                         if true == continue_run {
                                             
-                                        let _: () = con
-                                        .set(
-                                            format!(
-                                                "gtfsrt|{}|{}",
-                                                &reqquery.onetrip, &reqquery.category
-                                            ),
-                                            bytes.to_vec(),
-                                        )
-                                        .unwrap();
-
-                                    let _: () = con
-                                        .set(
-                                            format!(
-                                                "gtfsrttime|{}|{}",
-                                                &reqquery.onetrip, &reqquery.category
-                                            ),
-                                            SystemTime::now()
-                                                .duration_since(UNIX_EPOCH)
-                                                .unwrap()
-                                                .as_millis()
-                                                .to_string(),
-                                        )
-                                        .unwrap();
-
-                                    let _: () = con
-                                        .set(
-                                            format!(
-                                                "gtfsrtexists|{}",
-                                                &reqquery.onetrip
-                                            ),
-                                            SystemTime::now()
-                                                .duration_since(UNIX_EPOCH)
-                                                .unwrap()
-                                                .as_millis()
-                                                .to_string(),
-                                        )
-                                        .unwrap();
+                                        insert_gtfs_rt_bytes(&mut con, &bytes, &reqquery.onetrip, &reqquery.category);
                                         }
                                     }
                                     Err(_) => {

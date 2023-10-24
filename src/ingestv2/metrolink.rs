@@ -6,6 +6,7 @@ use termion::{color, style};
 
 use kactus::parse_protobuf_message;
 use std::fs;
+use kactus::insert::insert_gtfs_rt_bytes;
 
 fn get_epoch_ms() -> u128 {
     SystemTime::now()
@@ -177,40 +178,9 @@ async fn runcategory(
                                         get_epoch_ms() - (timestamp as u128 * 1000)
                                     );
 
-                                    let _: () = con
-                                        .set(
-                                            format!(
-                                                "gtfsrttime|{}|{}",
-                                                "f-metrolinktrains~rt", &category
-                                            ),
-                                            SystemTime::now()
-                                                .duration_since(UNIX_EPOCH)
-                                                .unwrap()
-                                                .as_millis()
-                                                .to_string(),
-                                        )
-                                        .unwrap();
+                                    let feed_id = String::from("f-metrolinktrains~rt");
 
-                                    let _: () = con
-                                        .set(
-                                            format!(
-                                                "gtfsrt|{}|{}",
-                                                "f-metrolinktrains~rt", &category
-                                            ),
-                                            bytes,
-                                        )
-                                        .unwrap();
-
-                                    let _: () = con
-                                        .set(
-                                            format!("gtfsrtexists|{}", "f-metrolinktrains~rt"),
-                                            SystemTime::now()
-                                                .duration_since(UNIX_EPOCH)
-                                                .unwrap()
-                                                .as_millis()
-                                                .to_string(),
-                                        )
-                                        .unwrap();
+                                    insert_gtfs_rt_bytes(&mut con, &bytes, &feed_id, &category.to_string());
                                 }
                                 None => {
                                     println!("{} Protobuf missing timestamp", &category);
