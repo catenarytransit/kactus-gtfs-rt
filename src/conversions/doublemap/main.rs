@@ -189,7 +189,7 @@ async fn main() {
                 &mut con,
                 &vehicle_feed,
                 &"f-roamtransit~rt".to_string(),
-                &"vehicle".to_string(),
+                &"vehicles".to_string(),
             );
         };
 
