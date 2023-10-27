@@ -11,6 +11,8 @@ async fn main() {
 
         let zot = systemctl::Unit::from_systemctl("zotgtfsrt.service").unwrap();
 
+        let la = systemctl::Unit::from_systemctl("kactuslacmta.service").unwrap();
+
         let request = client.get("https://kactus.catenarymaps.org/").send().await;
 
         let pve_is_up = match request {
@@ -35,11 +37,13 @@ async fn main() {
             let _ = kactusserver.stop();
             let _ = kactusingest.stop();
             let _ = zot.stop();
+            let _ = la.stop();
         } else {
             // start server
             let _ = kactusserver.start();
             let _ = kactusingest.start();
             let _ = zot.start();
+            let _ = la.start();
         }
 
         //sleep 1 sec
