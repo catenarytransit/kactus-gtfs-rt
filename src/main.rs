@@ -1,21 +1,21 @@
-use actix_web::http::header::TryIntoHeaderValue;
+
 use actix_web::{
     middleware::DefaultHeaders, web, App, HttpRequest, HttpResponse, HttpServer, Responder,
 };
-use hyper::client;
+
 use redis::Commands;
 extern crate qstring;
-use csv::ReaderBuilder;
-use fasthash::{metro, MetroHasher};
+
+
 use kactus::parse_protobuf_message;
 use qstring::QString;
-use std::fs::File;
-use std::hash;
-use std::hash::{Hash, Hasher};
-use std::io::BufReader;
+
+
+
+
 use std::time::Instant;
 
-use protobuf::{CodedInputStream, Message};
+use protobuf::{Message};
 
 use serde::Serialize;
 
@@ -31,7 +31,7 @@ pub struct feedtimes {
     has_alerts: bool,*/
 }
 
-async fn index(req: HttpRequest) -> impl Responder {
+async fn index(_req: HttpRequest) -> impl Responder {
     HttpResponse::Ok()
         .insert_header(("Content-Type", "text/plain"))
         .body("Hello world!")
@@ -102,7 +102,7 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
                                                 Ok(proto) => {
                                                     let headertimestamp = proto.header.timestamp;
 
-                                                    if (headertimestamp.is_some()) {
+                                                    if headertimestamp.is_some() {
                                                         if timeofclientcache
                                                             >= headertimestamp.unwrap()
                                                         {
@@ -163,7 +163,7 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
                                 }
                             }
                         }
-                        Err(e) => {
+                        Err(_e) => {
                             return HttpResponse::NotFound()
                                 .insert_header(("Content-Type", "text/plain"))
                                 .body(format!("Error in connecting to redis\n"));
@@ -185,7 +185,7 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
     }
 }
 
-async fn gtfsrttimes(req: HttpRequest) -> impl Responder {
+async fn gtfsrttimes(_req: HttpRequest) -> impl Responder {
     let redisclient = redis::Client::open("redis://127.0.0.1:6379/").unwrap();
     let mut con = redisclient.get_connection().unwrap();
 
@@ -212,17 +212,17 @@ async fn gtfsrttimes(req: HttpRequest) -> impl Responder {
 
                 let vehicles = match vehicles {
                     Ok(data) => Some(data),
-                    Err(e) => None,
+                    Err(_e) => None,
                 };
 
                 let trips = match trips {
                     Ok(data) => Some(data),
-                    Err(e) => None,
+                    Err(_e) => None,
                 };
 
                 let alerts = match alerts {
                     Ok(data) => Some(data),
-                    Err(e) => None,
+                    Err(_e) => None,
                 };
 
                 let feedtime = feedtimes {
@@ -287,7 +287,7 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
                         con.get::<String, u64>(format!("gtfsrttime|{}|{}", feed, category));
 
                     match doesexist {
-                        Ok(timeofcache) => {
+                        Ok(_timeofcache) => {
                             let data =
                                 con.get::<String, Vec<u8>>(format!("gtfsrt|{}|{}", feed, category));
 
@@ -327,7 +327,7 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
                                     .body(format!("Error: {}\n", e)),
                             }
                         }
-                        Err(e) => {
+                        Err(_e) => {
                             return HttpResponse::NotFound()
                                 .insert_header(("Content-Type", "text/plain"))
                                 .body(format!("Error in connecting to redis\n"))
