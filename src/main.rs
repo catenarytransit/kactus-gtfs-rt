@@ -369,7 +369,7 @@ async fn main() -> std::io::Result<()> {
     .workers(4);
 
     // Bind the server to port 8080.
-    let _ = builder.bind("127.0.0.1:8080").unwrap().run().await;
+    let _ = builder.bind("127.0.0.1:54105").unwrap().run().await;
 
     Ok(())
 }
