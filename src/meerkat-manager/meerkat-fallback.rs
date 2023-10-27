@@ -1,33 +1,27 @@
-
 use reqwest::Client as ReqwestClient;
-use std::time::Duration;
 use reqwest::StatusCode;
+use std::time::Duration;
 #[tokio::main]
 async fn main() {
-
     let client = ReqwestClient::new();
 
     loop {
-        let kactusserver = systemctl::Unit::from_systemctl("kactusserver")
-    .unwrap();
-let kactusingest = systemctl::Unit::from_systemctl("kactusingest")
-    .unwrap();
+        let kactusserver = systemctl::Unit::from_systemctl("kactusserver").unwrap();
+        let kactusingest = systemctl::Unit::from_systemctl("kactusingest").unwrap();
 
-    let zot = systemctl::Unit::from_systemctl("zotgtfsrt").unwrap();
+        let zot = systemctl::Unit::from_systemctl("zotgtfsrt").unwrap();
 
         let request = client.get("https://kactus.catenarymaps.org/").send().await;
 
         let pve_is_up = match request {
-            Ok(response) => {
-                match response.status() {
-                    StatusCode::OK => {
-                        println!("Meerkat is up");
-                        true
-                    },
-                    _ => {
-                        println!("Meerkat is down");
-                        false
-                    }
+            Ok(response) => match response.status() {
+                StatusCode::OK => {
+                    println!("Meerkat is up");
+                    true
+                }
+                _ => {
+                    println!("Meerkat is down");
+                    false
                 }
             },
             Err(error) => {
@@ -35,7 +29,7 @@ let kactusingest = systemctl::Unit::from_systemctl("kactusingest")
                 false
             }
         };
-        
+
         if pve_is_up {
             // stop server
             let _ = kactusserver.stop();
@@ -51,7 +45,7 @@ let kactusingest = systemctl::Unit::from_systemctl("kactusingest")
         //sleep 1 sec
 
         let sleep_duration = Duration::from_millis(1000);
-            println!("sleeping for {:?}", sleep_duration);
-            std::thread::sleep(sleep_duration);
+        println!("sleeping for {:?}", sleep_duration);
+        std::thread::sleep(sleep_duration);
     }
 }

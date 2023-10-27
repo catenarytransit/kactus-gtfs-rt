@@ -1,4 +1,3 @@
-
 use actix_web::{
     middleware::DefaultHeaders, web, App, HttpRequest, HttpResponse, HttpServer, Responder,
 };
@@ -6,16 +5,12 @@ use actix_web::{
 use redis::Commands;
 extern crate qstring;
 
-
 use kactus::parse_protobuf_message;
 use qstring::QString;
 
-
-
-
 use std::time::Instant;
 
-use protobuf::{Message};
+use protobuf::Message;
 
 use serde::Serialize;
 
