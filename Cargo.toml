@@ -29,6 +29,7 @@ color-eyre = "0.6.2"
 fasthash = "0.4.0"
 prost = "0.11.9"
 rayon = "1.8.0"
+systemctl = "0.3.1"
 
 [[bin]]
 name = "server"
@@ -49,3 +50,7 @@ path = "src/conversions/nyc_rail.rs"
 [[bin]]
 name = "ingestdoublemap"
 path = "src/conversions/doublemap/main.rs"
+
+[[bin]]
+name = "meerkat-fallback"
+path = "src/meerkat-manager/meerkat-fallback.rs"
