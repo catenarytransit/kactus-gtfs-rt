@@ -9,7 +9,7 @@ Restart=on-failure
 RestartSec=1
 User=root
 ExecStartPre=/usr/bin/sudo -u kyler /usr/local/bin/cargo build --release --bin meerkat-fallback
-ExecStart=/usr/local/bin/cargo run --release --bin meerkat-fallback
+ExecStart=./target/release/meerkat-fallback
 WorkingDirectory=/home/kyler/kactus-gtfs-rt/
 
 [Install]

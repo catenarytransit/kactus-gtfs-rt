@@ -6,10 +6,10 @@ async fn main() {
     let client = ReqwestClient::new();
 
     loop {
-        let kactusserver = systemctl::Unit::from_systemctl("kactusserver").unwrap();
-        let kactusingest = systemctl::Unit::from_systemctl("kactusingest").unwrap();
+        let kactusserver = systemctl::Unit::from_systemctl("kactusserver.service").unwrap();
+        let kactusingest = systemctl::Unit::from_systemctl("kactusingest.service").unwrap();
 
-        let zot = systemctl::Unit::from_systemctl("zotgtfsrt").unwrap();
+        let zot = systemctl::Unit::from_systemctl("zotgtfsrt.service").unwrap();
 
         let request = client.get("https://kactus.catenarymaps.org/").send().await;
 
