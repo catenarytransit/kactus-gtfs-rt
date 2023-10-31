@@ -2,7 +2,8 @@
 use actix_web::{
     middleware::DefaultHeaders, web, App, HttpRequest, HttpResponse, HttpServer, Responder,
 };
-
+use actix_web::dev::Service;
+use futures::FutureExt;
 use redis::Commands;
 extern crate qstring;
 
@@ -363,6 +364,7 @@ async fn main() -> std::io::Result<()> {
                         "Server, hash, server, Hash",
                     )),
             )
+            .wrap(actix_block_ai_crawling::BlockAi)
             .route("/", web::get().to(index))
             .route("/gtfsrt/", web::get().to(gtfsrt))
             .route("/gtfsrt", web::get().to(gtfsrt))
