@@ -1,4 +1,3 @@
-
 use actix_web::{
     middleware::DefaultHeaders, web, App, HttpRequest, HttpResponse, HttpServer, Responder,
 };
@@ -7,16 +6,12 @@ use futures::FutureExt;
 use redis::Commands;
 extern crate qstring;
 
-
 use kactus::parse_protobuf_message;
 use qstring::QString;
 
-
-
-
 use std::time::Instant;
 
-use protobuf::{Message};
+use protobuf::Message;
 
 use serde::Serialize;
 
@@ -376,7 +371,7 @@ async fn main() -> std::io::Result<()> {
     .workers(4);
 
     // Bind the server to port 8080.
-    let _ = builder.bind("127.0.0.1:8080").unwrap().run().await;
+    let _ = builder.bind("127.0.0.1:54105").unwrap().run().await;
 
     Ok(())
 }

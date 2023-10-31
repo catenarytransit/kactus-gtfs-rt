@@ -30,6 +30,7 @@ fasthash = "0.4.0"
 prost = "0.11.9"
 rayon = "1.8.0"
 actix_block_ai_crawling = "0.2.1"
+systemctl = "0.3.1"
 
 [[bin]]
 name = "server"
@@ -50,3 +51,10 @@ path = "src/conversions/nyc_rail.rs"
 [[bin]]
 name = "ingestdoublemap"
 path = "src/conversions/doublemap/main.rs"
+<<<<<<< HEAD
+=======
+
+[[bin]]
+name = "meerkat-fallback"
+path = "src/meerkat-manager/meerkat-fallback.rs"
+>>>>>>> ca4e1f59a139657d2d19a0ff56d0cafe9439bbf1
