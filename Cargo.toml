@@ -31,6 +31,9 @@ prost = "0.11.9"
 rayon = "1.8.0"
 systemctl = "0.3.1"
 
+[lib]
+path = "src/lib.rs"
+
 [[bin]]
 name = "server"
 path = "src/main.rs"
