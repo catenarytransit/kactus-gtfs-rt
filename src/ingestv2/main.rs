@@ -166,11 +166,11 @@ async fn main() -> color_eyre::eyre::Result<()> {
                 None => agency.auth_password.clone(),
             };
 
-            let vehicles_result = fetchurl(fetch.vehicles, &agency.auth_header, &agency.auth_type, &passwordtouse, client.clone(), timeoutforfetch).await;
+            let vehicles_result = fetchurl(&fetch.vehicles, &agency.auth_header, &agency.auth_type, &passwordtouse, client.clone(), timeoutforfetch).await;
 
-            let trips_result = fetchurl(fetch.trips, &agency.auth_header, &agency.auth_type, &passwordtouse, client.clone(), timeoutforfetch).await;
+            let trips_result = fetchurl(&fetch.trips, &agency.auth_header, &agency.auth_type, &passwordtouse, client.clone(), timeoutforfetch).await;
 
-            let alerts_result = fetchurl(fetch.alerts, &agency.auth_header, &agency.auth_type, &passwordtouse, client.clone(), timeoutforfetch).await;
+            let alerts_result = fetchurl(&fetch.alerts, &agency.auth_header, &agency.auth_type, &passwordtouse, client.clone(), timeoutforfetch).await;
 
             if vehicles_result.is_some() {
 
@@ -209,7 +209,9 @@ async fn main() -> color_eyre::eyre::Result<()> {
                 insert_gtfs_rt_bytes(&mut con, &bytes, &agency.onetrip, &("alerts".to_string()));
             }
 
-            send_to_aspen(&agency.onetrip, &vehicles_result, &trips_result, &alerts_result).await;
+            send_to_aspen(&agency.onetrip, &vehicles_result, &trips_result, &alerts_result, fetch.vehicles.is_some(),
+            fetch.trips.is_some(), fetch.alerts.is_some()
+        ).await;
           } 
         }))
         .buffer_unordered(threadcount)
@@ -251,11 +253,11 @@ fn convert_multiauth_to_vec(inputstring: &String) -> Option<Vec<String>> {
     }
 }
 
-async fn send_to_aspen(agency: &String, vehicles_result: &Option<Vec<u8>>, trips_result: &Option<Vec<u8>>, alerts_result: &Option<Vec<u8>>) {
+async fn send_to_aspen(agency: &String, vehicles_result: &Option<Vec<u8>>, trips_result: &Option<Vec<u8>>, alerts_result: &Option<Vec<u8>>, vehicles_exist: bool, trips_exist: bool, alerts_exist: bool) {
     //send data to aspen over tarpc
 }
 
-async fn fetchurl(url: Option<String>, auth_header: &String, auth_type: &String, auth_password: &String, client: ReqwestClient, timeoutforfetch: u64) -> Option<Vec<u8>> {
+async fn fetchurl(url: &Option<String>, auth_header: &String, auth_type: &String, auth_password: &String, client: ReqwestClient, timeoutforfetch: u64) -> Option<Vec<u8>> {
     match url {
         Some(url) => {
             let mut req = client.get(url);
