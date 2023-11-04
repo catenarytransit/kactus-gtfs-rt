@@ -252,7 +252,7 @@ fn convert_multiauth_to_vec(inputstring: &String) -> Option<Vec<String>> {
 }
 
 async fn send_to_aspen(agency: &String, vehicles_result: &Option<Vec<u8>>, trips_result: &Option<Vec<u8>>, alerts_result: &Option<Vec<u8>>) {
-    
+    //send data to aspen over tarpc
 }
 
 async fn fetchurl(url: Option<String>, auth_header: &String, auth_type: &String, auth_password: &String, client: ReqwestClient, timeoutforfetch: u64) -> Option<Vec<u8>> {
