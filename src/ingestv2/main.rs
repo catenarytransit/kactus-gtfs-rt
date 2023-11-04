@@ -10,10 +10,10 @@ extern crate rand;
 use crate::rand::prelude::SliceRandom;
 use kactus::insert::insert_gtfs_rt_bytes;
 extern crate csv;
+use futures::future::join_all;
 use std::error::Error;
 use std::fs::File;
 use std::io::BufReader;
-use futures::future::join_all;
 
 //stores the config for each agency
 #[derive(Debug, Clone)]
@@ -143,76 +143,118 @@ async fn main() -> color_eyre::eyre::Result<()> {
         let fetches = futures::stream::iter(reqquery_vec_cloned.into_iter().map(|agency| {
             let client = &client;
 
-          async move {
+            async move {
+                let redisclient = redis::Client::open("redis://127.0.0.1:6379/").unwrap();
+                let mut con = redisclient.get_connection().unwrap();
 
-            let redisclient = redis::Client::open("redis://127.0.0.1:6379/").unwrap();
-            let mut con = redisclient.get_connection().unwrap();
-             
-             //println!("{:#?}", agency);
+                //println!("{:#?}", agency);
 
-             let fetch = Agencyurls {
-                 vehicles: make_url(&agency.realtime_vehicle_positions,&agency.auth_type,&agency.auth_header,&agency.auth_password),
-                 trips: make_url(&agency.realtime_trip_updates,&agency.auth_type,&agency.auth_header,&agency.auth_password),
-                 alerts: make_url(&agency.realtime_alerts,&agency.auth_type,&agency.auth_header,&agency.auth_password),
-             };
+                let fetch = Agencyurls {
+                    vehicles: make_url(
+                        &agency.realtime_vehicle_positions,
+                        &agency.auth_type,
+                        &agency.auth_header,
+                        &agency.auth_password,
+                    ),
+                    trips: make_url(
+                        &agency.realtime_trip_updates,
+                        &agency.auth_type,
+                        &agency.auth_header,
+                        &agency.auth_password,
+                    ),
+                    alerts: make_url(
+                        &agency.realtime_alerts,
+                        &agency.auth_type,
+                        &agency.auth_header,
+                        &agency.auth_password,
+                    ),
+                };
 
-             let passwordtouse = match &agency.multiauth {
-                Some(multiauth) => {
-                    let mut rng = rand::thread_rng();
-                    let random_auth = multiauth.choose(&mut rng).unwrap();
+                let passwordtouse = match &agency.multiauth {
+                    Some(multiauth) => {
+                        let mut rng = rand::thread_rng();
+                        let random_auth = multiauth.choose(&mut rng).unwrap();
 
-                    random_auth.to_string()
+                        random_auth.to_string()
+                    }
+                    None => agency.auth_password.clone(),
+                };
+
+                let vehicles_result = fetchurl(
+                    &fetch.vehicles,
+                    &agency.auth_header,
+                    &agency.auth_type,
+                    &passwordtouse,
+                    client.clone(),
+                    timeoutforfetch,
+                )
+                .await;
+
+                let trips_result = fetchurl(
+                    &fetch.trips,
+                    &agency.auth_header,
+                    &agency.auth_type,
+                    &passwordtouse,
+                    client.clone(),
+                    timeoutforfetch,
+                )
+                .await;
+
+                let alerts_result = fetchurl(
+                    &fetch.alerts,
+                    &agency.auth_header,
+                    &agency.auth_type,
+                    &passwordtouse,
+                    client.clone(),
+                    timeoutforfetch,
+                )
+                .await;
+
+                if vehicles_result.is_some() {
+                    let bytes = vehicles_result.as_ref().unwrap().to_vec();
+
+                    println!("{} vehicles bytes: {}", &agency.onetrip, bytes.len());
+
+                    insert_gtfs_rt_bytes(
+                        &mut con,
+                        &bytes,
+                        &agency.onetrip,
+                        &("vehicles".to_string()),
+                    );
                 }
-                None => agency.auth_password.clone(),
-            };
 
-            let vehicles_result = fetchurl(&fetch.vehicles, &agency.auth_header, &agency.auth_type, &passwordtouse, client.clone(), timeoutforfetch).await;
+                if trips_result.is_some() {
+                    let bytes = trips_result.as_ref().unwrap().to_vec();
 
-            let trips_result = fetchurl(&fetch.trips, &agency.auth_header, &agency.auth_type, &passwordtouse, client.clone(), timeoutforfetch).await;
+                    println!("{} trips bytes: {}", &agency.onetrip, bytes.len());
 
-            let alerts_result = fetchurl(&fetch.alerts, &agency.auth_header, &agency.auth_type, &passwordtouse, client.clone(), timeoutforfetch).await;
+                    insert_gtfs_rt_bytes(&mut con, &bytes, &agency.onetrip, &("trips".to_string()));
+                }
 
-            if vehicles_result.is_some() {
+                if alerts_result.is_some() {
+                    let bytes = alerts_result.as_ref().unwrap().to_vec();
 
-                let bytes = vehicles_result.as_ref().unwrap().to_vec();
-                
-                println!(
-                    "{} vehicles bytes: {}",
+                    println!("{} alerts bytes: {}", &agency.onetrip, bytes.len());
+
+                    insert_gtfs_rt_bytes(
+                        &mut con,
+                        &bytes,
+                        &agency.onetrip,
+                        &("alerts".to_string()),
+                    );
+                }
+
+                send_to_aspen(
                     &agency.onetrip,
-                    bytes.len()
-                );
-
-                insert_gtfs_rt_bytes(&mut con, &bytes, &agency.onetrip, &("vehicles".to_string()));
+                    &vehicles_result,
+                    &trips_result,
+                    &alerts_result,
+                    fetch.vehicles.is_some(),
+                    fetch.trips.is_some(),
+                    fetch.alerts.is_some(),
+                )
+                .await;
             }
-
-            if trips_result.is_some() {
-                let bytes = trips_result.as_ref().unwrap().to_vec();
-
-                println!(
-                    "{} trips bytes: {}",
-                    &agency.onetrip,
-                    bytes.len()
-                );
-
-                insert_gtfs_rt_bytes(&mut con, &bytes, &agency.onetrip, &("trips".to_string()));
-            }
-
-            if alerts_result.is_some() {
-                let bytes = alerts_result.as_ref().unwrap().to_vec();
-
-                println!(
-                    "{} alerts bytes: {}",
-                    &agency.onetrip,
-                    bytes.len()
-                );
-
-                insert_gtfs_rt_bytes(&mut con, &bytes, &agency.onetrip, &("alerts".to_string()));
-            }
-
-            send_to_aspen(&agency.onetrip, &vehicles_result, &trips_result, &alerts_result, fetch.vehicles.is_some(),
-            fetch.trips.is_some(), fetch.alerts.is_some()
-        ).await;
-          } 
         }))
         .buffer_unordered(threadcount)
         .collect::<Vec<()>>();
@@ -253,11 +295,26 @@ fn convert_multiauth_to_vec(inputstring: &String) -> Option<Vec<String>> {
     }
 }
 
-async fn send_to_aspen(agency: &String, vehicles_result: &Option<Vec<u8>>, trips_result: &Option<Vec<u8>>, alerts_result: &Option<Vec<u8>>, vehicles_exist: bool, trips_exist: bool, alerts_exist: bool) {
+async fn send_to_aspen(
+    agency: &String,
+    vehicles_result: &Option<Vec<u8>>,
+    trips_result: &Option<Vec<u8>>,
+    alerts_result: &Option<Vec<u8>>,
+    vehicles_exist: bool,
+    trips_exist: bool,
+    alerts_exist: bool,
+) {
     //send data to aspen over tarpc
 }
 
-async fn fetchurl(url: &Option<String>, auth_header: &String, auth_type: &String, auth_password: &String, client: ReqwestClient, timeoutforfetch: u64) -> Option<Vec<u8>> {
+async fn fetchurl(
+    url: &Option<String>,
+    auth_header: &String,
+    auth_type: &String,
+    auth_password: &String,
+    client: ReqwestClient,
+    timeoutforfetch: u64,
+) -> Option<Vec<u8>> {
     match url {
         Some(url) => {
             let mut req = client.get(url);
@@ -266,7 +323,10 @@ async fn fetchurl(url: &Option<String>, auth_header: &String, auth_type: &String
                 req = req.header(auth_header, auth_password);
             }
 
-            let resp = req.timeout(Duration::from_millis(timeoutforfetch)).send().await;
+            let resp = req
+                .timeout(Duration::from_millis(timeoutforfetch))
+                .send()
+                .await;
 
             match resp {
                 Ok(resp) => {
@@ -276,26 +336,28 @@ async fn fetchurl(url: &Option<String>, auth_header: &String, auth_type: &String
                                 let bytes = bytes_pre.to_vec();
                                 Some(bytes)
                             }
-                            _ => {
-                                None
-                            }
+                            _ => None,
                         }
                     } else {
                         None
                     }
-                },
+                }
                 Err(e) => {
                     println!("error fetching url: {:?}", e);
                     None
                 }
             }
-
-        },
-    _ => None,
+        }
+        _ => None,
     }
 }
 
-fn make_url(url: &String, auth_type: &String, auth_header: &String, auth_password: &String) -> Option<String> {
+fn make_url(
+    url: &String,
+    auth_type: &String,
+    auth_header: &String,
+    auth_password: &String,
+) -> Option<String> {
     if url.is_empty() == false {
         let mut outputurl = url.clone();
 

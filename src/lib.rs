@@ -72,5 +72,3 @@ pub mod insert {
             .unwrap();
     }
 }
-
-
