@@ -350,7 +350,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             convert(&import_data, "LIRR", &input_gtfs_lirr);
         let vehiclepositions_mnr: Vec<gtfs_rt::FeedEntity> =
             convert(&import_data, "MNR", &input_gtfs_mnr);
-        
+
         let lirrdata = gtfs_rt::FeedMessage {
             header: gtfs_rt::FeedHeader {
                 gtfs_realtime_version: "2.0".to_string(),
@@ -397,7 +397,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             true,
             true,
             false,
-            true
+            true,
         );
 
         insert_gtfs_rt_bytes(
@@ -415,7 +415,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             true,
             true,
             false,
-            true
+            true,
         );
 
         //println!("{:?}", import_data);

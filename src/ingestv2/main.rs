@@ -1,9 +1,9 @@
+use futures::join;
 use futures::StreamExt;
 use redis::Commands;
 use reqwest::Client as ReqwestClient;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use termion::{color, style};
-use futures::join;
 extern crate color_eyre;
 use fasthash::metro;
 use kactus::parse_protobuf_message;
@@ -142,35 +142,36 @@ async fn main() -> color_eyre::eyre::Result<()> {
                     None => agency.auth_password.clone(),
                 };
 
-                let grouped_fetch = join!(fetchurl(
-                    &fetch.vehicles,
-                    &agency.auth_header,
-                    &agency.auth_type,
-                    &passwordtouse,
-                    client.clone(),
-                    timeoutforfetch,
-                ),
-                fetchurl(
-                    &fetch.trips,
-                    &agency.auth_header,
-                    &agency.auth_type,
-                    &passwordtouse,
-                    client.clone(),
-                    timeoutforfetch,
-                ),
-                fetchurl(
-                    &fetch.alerts,
-                    &agency.auth_header,
-                    &agency.auth_type,
-                    &passwordtouse,
-                    client.clone(),
-                    timeoutforfetch,
-                )
-            );
+                let grouped_fetch = join!(
+                    fetchurl(
+                        &fetch.vehicles,
+                        &agency.auth_header,
+                        &agency.auth_type,
+                        &passwordtouse,
+                        client.clone(),
+                        timeoutforfetch,
+                    ),
+                    fetchurl(
+                        &fetch.trips,
+                        &agency.auth_header,
+                        &agency.auth_type,
+                        &passwordtouse,
+                        client.clone(),
+                        timeoutforfetch,
+                    ),
+                    fetchurl(
+                        &fetch.alerts,
+                        &agency.auth_header,
+                        &agency.auth_type,
+                        &passwordtouse,
+                        client.clone(),
+                        timeoutforfetch,
+                    )
+                );
 
-            let vehicles_result = grouped_fetch.0;
-            let trips_result = grouped_fetch.1;
-            let alerts_result = grouped_fetch.2;
+                let vehicles_result = grouped_fetch.0;
+                let trips_result = grouped_fetch.1;
+                let alerts_result = grouped_fetch.2;
 
                 if vehicles_result.is_some() {
                     let bytes = vehicles_result.as_ref().unwrap().to_vec();
@@ -214,7 +215,7 @@ async fn main() -> color_eyre::eyre::Result<()> {
                     fetch.vehicles.is_some(),
                     fetch.trips.is_some(),
                     fetch.alerts.is_some(),
-                    true
+                    true,
                 )
                 .await;
             }
@@ -267,38 +268,42 @@ async fn fetchurl(
     timeoutforfetch: u64,
 ) -> Option<Vec<u8>> {
     match url {
-        Some(url) => {
-            let mut req = client.get(url);
+        Some(url) => match String::from(url).contains("kactus") {
+            false => {
+                let mut req = client.get(url);
 
-            if auth_type == "header" {
-                req = req.header(auth_header, auth_password);
-            }
+                if auth_type == "header" {
+                    req = req.header(auth_header, auth_password);
+                }
 
-            let resp = req
-                .timeout(Duration::from_millis(timeoutforfetch))
-                .send()
-                .await;
+                let resp = req
+                    .timeout(Duration::from_millis(timeoutforfetch))
+                    .send()
+                    .await;
 
-            match resp {
-                Ok(resp) => {
-                    if resp.status().is_success() {
-                        match resp.bytes().await {
-                            Ok(bytes_pre) => {
-                                let bytes = bytes_pre.to_vec();
-                                Some(bytes)
+                match resp {
+                    Ok(resp) => {
+                        if resp.status().is_success() {
+                            match resp.bytes().await {
+                                Ok(bytes_pre) => {
+                                    let bytes = bytes_pre.to_vec();
+                                    Some(bytes)
+                                }
+                                _ => None,
                             }
-                            _ => None,
+                        } else {
+                            None
                         }
-                    } else {
+                    }
+                    Err(e) => {
+                        println!("error fetching url: {:?}", e);
                         None
                     }
                 }
-                Err(e) => {
-                    println!("error fetching url: {:?}", e);
-                    None
-                }
             }
-        }
+
+            true => None,
+        },
         _ => None,
     }
 }

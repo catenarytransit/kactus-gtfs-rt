@@ -1,9 +1,9 @@
+use crate::aspen::send_to_aspen;
 use protobuf::Message;
 use redis::Commands;
 use reqwest::Client as ReqwestClient;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use termion::{color, style};
-use crate::aspen::send_to_aspen;
 
 use kactus::insert::insert_gtfs_rt_bytes;
 use kactus::parse_protobuf_message;
@@ -46,19 +46,22 @@ async fn main() {
             determine_if_category_should_run(&last_trip_attempt, &last_trip_protobuf_timestamp);
 
         if veh_run || trip_run {
-            let metrolink_results = futures::join!(runcategory(
-                &client,
-                &metrolink_key,
-                "vehicles",
-                &mut last_veh_attempt,
-                &mut last_veh_protobuf_timestamp,
-            ), runcategory(
-                &client,
-                &metrolink_key,
-                "trips",
-                &mut last_trip_attempt,
-                &mut last_trip_protobuf_timestamp,
-            ));
+            let metrolink_results = futures::join!(
+                runcategory(
+                    &client,
+                    &metrolink_key,
+                    "vehicles",
+                    &mut last_veh_attempt,
+                    &mut last_veh_protobuf_timestamp,
+                ),
+                runcategory(
+                    &client,
+                    &metrolink_key,
+                    "trips",
+                    &mut last_trip_attempt,
+                    &mut last_trip_protobuf_timestamp,
+                )
+            );
 
             send_to_aspen(
                 "f-metrolinktrains~rt",
@@ -67,9 +70,10 @@ async fn main() {
                 &None,
                 true,
                 true,
+                true,
                 false,
-                false,
-            ).await;
+            )
+            .await;
         }
 
         //added this section because thread looping apparently consumes the whole core

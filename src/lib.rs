@@ -32,12 +32,14 @@ pub mod insert {
             .to_string();
 
         let key: String = format!("gtfsrt|{}|{}", &onetrip, &category);
-        let _: () = con
-            .set(key.clone(), bytes)
-            .unwrap();
+        let _: () = con.set(key.clone(), bytes).unwrap();
 
         let msg: Vec<u8> = bytes.clone();
-        let _xadd_result: RedisResult<String> = con.xadd(format!("{}-{}", &onetrip, &category), "*", &[(key.clone(), msg.clone())]);
+        let _xadd_result: RedisResult<String> = con.xadd(
+            format!("{}-{}", &onetrip, &category),
+            "*",
+            &[(key.clone(), msg.clone())],
+        );
         inserttimes(con, &onetrip, &category, &now_millis);
         let _ = con.set_read_timeout(Some(Duration::new(10, 0)));
     }
