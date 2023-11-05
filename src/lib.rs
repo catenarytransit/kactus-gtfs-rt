@@ -22,8 +22,8 @@ pub mod insert {
     pub fn insert_gtfs_rt_bytes(
         con: &mut Connection,
         bytes: &Vec<u8>,
-        onetrip: &String,
-        category: &String,
+        onetrip: &str,
+        category: &str,
     ) {
         let now_millis = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -44,8 +44,8 @@ pub mod insert {
     pub fn insert_gtfs_rt(
         con: &mut Connection,
         data: &gtfs_rt::FeedMessage,
-        onetrip: &String,
-        category: &String,
+        onetrip: &str,
+        category: &str,
     ) {
         let now_millis = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -62,7 +62,7 @@ pub mod insert {
         inserttimes(con, &onetrip, &category, &now_millis);
     }
 
-    fn inserttimes(con: &mut Connection, onetrip: &String, category: &String, now_millis: &String) {
+    fn inserttimes(con: &mut Connection, onetrip: &str, category: &str, now_millis: &String) {
         let _: () = con
             .set(
                 format!("gtfsrttime|{}|{}", &onetrip, &category),

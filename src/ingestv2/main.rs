@@ -16,6 +16,7 @@ use std::error::Error;
 use std::fs::File;
 use std::io::BufReader;
 
+mod aspen;
 //stores the config for each agency
 #[derive(Debug, Clone)]
 struct AgencyInfo {
@@ -31,49 +32,11 @@ struct AgencyInfo {
     multiauth: Option<Vec<String>>,
 }
 
-#[derive(Debug, Clone)]
-struct Reqquery {
-    url: String,
-    has_auth: bool,
-    auth_type: String,
-    auth_header: String,
-    auth_password: String,
-    category: String,
-    multiauth: Option<Vec<String>>,
-    onetrip: String,
-    fetch_interval: f32,
-}
-
-#[derive(Debug, Clone)]
-struct OctaBit {
-    position: gtfs_rt::Position,
-    vehicle: gtfs_rt::VehicleDescriptor,
-    trip: gtfs_rt::TripDescriptor,
-}
-
 #[derive(Debug)]
 struct Agencyurls {
     vehicles: Option<String>,
     trips: Option<String>,
     alerts: Option<String>,
-}
-
-fn octa_compute_into_hash(feed: &gtfs_rt::FeedMessage) -> u64 {
-    let arrayofelements = feed
-        .entity
-        .iter()
-        .filter(|x| x.vehicle.is_some())
-        .map(|x| {
-            return OctaBit {
-                position: x.vehicle.clone().unwrap().position.unwrap(),
-                vehicle: x.vehicle.clone().unwrap().vehicle.unwrap(),
-                trip: x.vehicle.clone().unwrap().trip.unwrap(),
-            };
-        })
-        .collect::<Vec<OctaBit>>();
-
-    let value = format!("{:?}", arrayofelements);
-    return metro::hash64(value);
 }
 
 #[tokio::main]
@@ -129,8 +92,6 @@ async fn main() -> color_eyre::eyre::Result<()> {
             }
         }
     }
-
-    let mut reqquery_vec: Vec<Reqquery> = Vec::new();
 
     let mut lastloop;
 
@@ -245,7 +206,7 @@ async fn main() -> color_eyre::eyre::Result<()> {
                     );
                 }
 
-                send_to_aspen(
+                aspen::send_to_aspen(
                     &agency.onetrip,
                     &vehicles_result,
                     &trips_result,
@@ -253,6 +214,7 @@ async fn main() -> color_eyre::eyre::Result<()> {
                     fetch.vehicles.is_some(),
                     fetch.trips.is_some(),
                     fetch.alerts.is_some(),
+                    true
                 )
                 .await;
             }
@@ -294,18 +256,6 @@ fn convert_multiauth_to_vec(inputstring: &String) -> Option<Vec<String>> {
     } else {
         None
     }
-}
-
-async fn send_to_aspen(
-    agency: &str,
-    vehicles_result: &Option<Vec<u8>>,
-    trips_result: &Option<Vec<u8>>,
-    alerts_result: &Option<Vec<u8>>,
-    vehicles_exist: bool,
-    trips_exist: bool,
-    alerts_exist: bool,
-) {
-    //send data to aspen over tarpc
 }
 
 async fn fetchurl(

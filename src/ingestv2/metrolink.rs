@@ -3,10 +3,13 @@ use redis::Commands;
 use reqwest::Client as ReqwestClient;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use termion::{color, style};
+use crate::aspen::send_to_aspen;
 
 use kactus::insert::insert_gtfs_rt_bytes;
 use kactus::parse_protobuf_message;
 use std::fs;
+
+mod aspen;
 
 fn get_epoch_ms() -> u128 {
     SystemTime::now()
@@ -42,26 +45,31 @@ async fn main() {
         let trip_run: bool =
             determine_if_category_should_run(&last_trip_attempt, &last_trip_protobuf_timestamp);
 
-        if veh_run {
-            runcategory(
+        if veh_run || trip_run {
+            let metrolink_results = futures::join!(runcategory(
                 &client,
                 &metrolink_key,
                 "vehicles",
                 &mut last_veh_attempt,
                 &mut last_veh_protobuf_timestamp,
-            )
-            .await;
-        }
-
-        if trip_run {
-            runcategory(
+            ), runcategory(
                 &client,
                 &metrolink_key,
                 "trips",
                 &mut last_trip_attempt,
                 &mut last_trip_protobuf_timestamp,
-            )
-            .await;
+            ));
+
+            send_to_aspen(
+                "f-metrolinktrains~rt",
+                &metrolink_results.0,
+                &metrolink_results.1,
+                &None,
+                true,
+                true,
+                false,
+                false,
+            ).await;
         }
 
         //added this section because thread looping apparently consumes the whole core
@@ -123,7 +131,7 @@ async fn runcategory(
     category: &str,
     last_veh_attempt: &mut Option<Instant>,
     last_protobuf_timestamp: &mut Option<u128>,
-) -> () {
+) -> Option<Vec<u8>> {
     let url = match category {
         "trips" => "https://metrolink-gtfsrt.gbsdigital.us/feed/gtfsrt-trips",
         "vehicles" => "https://metrolink-gtfsrt.gbsdigital.us/feed/gtfsrt-vehicles",
@@ -178,7 +186,7 @@ async fn runcategory(
                                         get_epoch_ms() - (timestamp as u128 * 1000)
                                     );
 
-                                    let feed_id = String::from("f-metrolinktrains~rt");
+                                    let feed_id = "f-metrolinktrains~rt";
 
                                     insert_gtfs_rt_bytes(
                                         &mut con,
@@ -186,6 +194,8 @@ async fn runcategory(
                                         &feed_id,
                                         &category.to_string(),
                                     );
+
+                                    return Some(bytes);
                                 }
                                 None => {
                                     println!("{} Protobuf missing timestamp", &category);
@@ -206,4 +216,6 @@ async fn runcategory(
             println!("{:?}", e)
         }
     };
+
+    None
 }
