@@ -16,7 +16,7 @@ pub fn parse_protobuf_message(
 pub mod insert {
 
     use prost::Message;
-    use redis::{Commands, Connection};
+    use redis::{Commands, Connection, RedisResult};
     use std::time::{SystemTime, UNIX_EPOCH};
 
     pub fn insert_gtfs_rt_bytes(
@@ -31,9 +31,18 @@ pub mod insert {
             .as_millis()
             .to_string();
 
+        let key: String = format!("gtfsrt|{}|{}", &onetrip, &category);
         let _: () = con
-            .set(format!("gtfsrt|{}|{}", &onetrip, &category), bytes)
+            .set(key.clone(), bytes)
             .unwrap();
+
+        let msg: Vec<u8> = bytes.clone();
+        match con.publish::<String, Vec<u8>, u8>(key, msg) {
+            Ok(_) => {}
+            Err(err) => {
+                eprintln!("Error publishing message: {:?}", err);
+            }
+        }
 
         inserttimes(con, &onetrip, &category, &now_millis);
     }
