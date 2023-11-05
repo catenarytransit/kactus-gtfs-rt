@@ -16,7 +16,7 @@ pub fn parse_protobuf_message(
 pub mod insert {
 
     use prost::Message;
-    use redis::{Commands, Connection};
+    use redis::{Commands, Connection, RedisResult};
     use std::{time::{SystemTime, UNIX_EPOCH}, alloc::Global};
 
     pub fn insert_gtfs_rt_bytes(
@@ -37,7 +37,7 @@ pub mod insert {
             .unwrap();
 
         let msg: Vec<u8> = bytes.clone();
-        con.xadd::<String, i32, &[(String, Vec<u8>)]>(key, 1, &[(key,msg)]);
+        let xadd_result: RedisResult<String> = con.xadd(key, "*", &[(key, msg)]);
         match con.publish::<String, Vec<u8>, u8>(key, msg) {
             Ok(_) => {}
             Err(err) => {
