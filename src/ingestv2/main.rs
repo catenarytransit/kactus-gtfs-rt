@@ -3,6 +3,7 @@ use redis::Commands;
 use reqwest::Client as ReqwestClient;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use termion::{color, style};
+use futures::join;
 extern crate color_eyre;
 use fasthash::metro;
 use kactus::parse_protobuf_message;
@@ -180,27 +181,23 @@ async fn main() -> color_eyre::eyre::Result<()> {
                     None => agency.auth_password.clone(),
                 };
 
-                let vehicles_result = fetchurl(
+                let grouped_fetch = join!(fetchurl(
                     &fetch.vehicles,
                     &agency.auth_header,
                     &agency.auth_type,
                     &passwordtouse,
                     client.clone(),
                     timeoutforfetch,
-                )
-                .await;
-
-                let trips_result = fetchurl(
+                ),
+                fetchurl(
                     &fetch.trips,
                     &agency.auth_header,
                     &agency.auth_type,
                     &passwordtouse,
                     client.clone(),
                     timeoutforfetch,
-                )
-                .await;
-
-                let alerts_result = fetchurl(
+                ),
+                fetchurl(
                     &fetch.alerts,
                     &agency.auth_header,
                     &agency.auth_type,
@@ -208,7 +205,11 @@ async fn main() -> color_eyre::eyre::Result<()> {
                     client.clone(),
                     timeoutforfetch,
                 )
-                .await;
+            );
+
+            let vehicles_result = grouped_fetch.0;
+            let trips_result = grouped_fetch.1;
+            let alerts_result = grouped_fetch.2;
 
                 if vehicles_result.is_some() {
                     let bytes = vehicles_result.as_ref().unwrap().to_vec();
