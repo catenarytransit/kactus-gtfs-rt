@@ -17,7 +17,7 @@ pub mod insert {
 
     use prost::Message;
     use redis::{Commands, Connection, RedisResult};
-    use std::{time::{SystemTime, UNIX_EPOCH}, alloc::Global};
+    use std::{time::{SystemTime, UNIX_EPOCH}};
 
     pub fn insert_gtfs_rt_bytes(
         con: &mut Connection,
@@ -37,14 +37,7 @@ pub mod insert {
             .unwrap();
 
         let msg: Vec<u8> = bytes.clone();
-        let xadd_result: RedisResult<String> = con.xadd(key, "*", &[(key, msg)]);
-        match con.publish::<String, Vec<u8>, u8>(key, msg) {
-            Ok(_) => {}
-            Err(err) => {
-                eprintln!("Error publishing message: {:?}", err);
-            }
-        }
-
+        let _xadd_result: RedisResult<String> = con.xadd(format!("{}-{}", &onetrip, &category), "*", &[(key.clone(), msg.clone())]);
         inserttimes(con, &onetrip, &category, &now_millis);
     }
 
