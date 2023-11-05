@@ -15,6 +15,7 @@ pub fn parse_protobuf_message(
 
 pub mod insert {
 
+    use actix_web::cookie::time::Duration;
     use prost::Message;
     use redis::{Commands, Connection, RedisResult};
     use std::{time::{SystemTime, UNIX_EPOCH}};
@@ -39,8 +40,8 @@ pub mod insert {
         let msg: Vec<u8> = bytes.clone();
         let _xadd_result: RedisResult<String> = con.xadd(format!("{}-{}", &onetrip, &category), "*", &[(key.clone(), msg.clone())]);
         inserttimes(con, &onetrip, &category, &now_millis);
+        let _ = con.set_read_timeout(Some(std::time::Duration::new(10, 0)));
     }
-
     pub fn insert_gtfs_rt(
         con: &mut Connection,
         data: &gtfs_rt::FeedMessage,
