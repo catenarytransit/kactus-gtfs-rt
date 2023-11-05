@@ -1,7 +1,7 @@
+use actix_web::dev::Service;
 use actix_web::{
     middleware::DefaultHeaders, web, App, HttpRequest, HttpResponse, HttpServer, Responder,
 };
-use actix_web::dev::Service;
 use futures::FutureExt;
 use redis::Commands;
 extern crate qstring;

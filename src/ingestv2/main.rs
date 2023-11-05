@@ -3,6 +3,7 @@ use redis::Commands;
 use reqwest::Client as ReqwestClient;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use termion::{color, style};
+use futures::join;
 extern crate color_eyre;
 use fasthash::metro;
 use kactus::parse_protobuf_message;
@@ -10,6 +11,7 @@ extern crate rand;
 use crate::rand::prelude::SliceRandom;
 use kactus::insert::insert_gtfs_rt_bytes;
 extern crate csv;
+use futures::future::join_all;
 use std::error::Error;
 use std::fs::File;
 use std::io::BufReader;
@@ -47,6 +49,13 @@ struct OctaBit {
     position: gtfs_rt::Position,
     vehicle: gtfs_rt::VehicleDescriptor,
     trip: gtfs_rt::TripDescriptor,
+}
+
+#[derive(Debug)]
+struct Agencyurls {
+    vehicles: Option<String>,
+    trips: Option<String>,
+    alerts: Option<String>,
 }
 
 fn octa_compute_into_hash(feed: &gtfs_rt::FeedMessage) -> u64 {
@@ -123,222 +132,134 @@ async fn main() -> color_eyre::eyre::Result<()> {
 
     let mut reqquery_vec: Vec<Reqquery> = Vec::new();
 
-    //this converts all the agencies into a vec of the requests
-    for agency in agencies {
-        let mut canrun = true;
-
-        if agency.auth_password == "EXAMPLEKEY" {
-            canrun = false;
-        }
-
-        if canrun == true {
-            if !agency.realtime_vehicle_positions.is_empty() {
-                let reqquery = Reqquery {
-                    url: agency.realtime_vehicle_positions.clone(),
-                    has_auth: agency.has_auth,
-                    auth_type: agency.auth_type.clone(),
-                    auth_header: agency.auth_header.clone(),
-                    auth_password: agency.auth_password.clone(),
-                    category: "vehicles".to_string(),
-                    multiauth: agency.multiauth.clone(),
-                    onetrip: agency.onetrip.clone(),
-                    fetch_interval: agency.fetch_interval,
-                };
-
-                reqquery_vec.push(reqquery);
-            }
-
-            if !agency.realtime_trip_updates.is_empty() {
-                let reqquery = Reqquery {
-                    url: agency.realtime_trip_updates.clone(),
-                    has_auth: agency.has_auth,
-                    auth_type: agency.auth_type.clone(),
-                    auth_header: agency.auth_header.clone(),
-                    auth_password: agency.auth_password.clone(),
-                    category: "trips".to_string(),
-                    multiauth: agency.multiauth.clone(),
-                    onetrip: agency.onetrip.clone(),
-                    fetch_interval: agency.fetch_interval,
-                };
-
-                reqquery_vec.push(reqquery);
-            }
-
-            if !agency.realtime_alerts.is_empty() {
-                let reqquery = Reqquery {
-                    url: agency.realtime_alerts.clone(),
-                    has_auth: agency.has_auth,
-                    auth_type: agency.auth_type.clone(),
-                    auth_header: agency.auth_header.clone(),
-                    auth_password: agency.auth_password.clone(),
-                    category: "alerts".to_string(),
-                    multiauth: agency.multiauth.clone(),
-                    onetrip: agency.onetrip.clone(),
-                    fetch_interval: agency.fetch_interval,
-                };
-
-                reqquery_vec.push(reqquery);
-            }
-        }
-    }
-
     let mut lastloop;
 
     loop {
+        let client = ReqwestClient::new();
+
         lastloop = Instant::now();
 
-        let reqquery_vec_cloned = reqquery_vec.clone();
+        let reqquery_vec_cloned = agencies.clone();
 
-        let fetches = futures::stream::iter(reqquery_vec_cloned.into_iter().map(|reqquery| {
+        let fetches = futures::stream::iter(reqquery_vec_cloned.into_iter().map(|agency| {
             let client = &client;
-            
+
             async move {
-
-                //println!("Fetching {}", reqquery_vec.url);
-
                 let redisclient = redis::Client::open("redis://127.0.0.1:6379/").unwrap();
                 let mut con = redisclient.get_connection().unwrap();
 
-                let mut allowrun = true;
+                //println!("{:#?}", agency);
 
-                let last_updated_time = con.get::<String, u64>(format!(
-                    "gtfsrttime|{}|{}",
-                    &reqquery.onetrip, &reqquery.category
-                ));
+                let fetch = Agencyurls {
+                    vehicles: make_url(
+                        &agency.realtime_vehicle_positions,
+                        &agency.auth_type,
+                        &agency.auth_header,
+                        &agency.auth_password,
+                    ),
+                    trips: make_url(
+                        &agency.realtime_trip_updates,
+                        &agency.auth_type,
+                        &agency.auth_header,
+                        &agency.auth_password,
+                    ),
+                    alerts: make_url(
+                        &agency.realtime_alerts,
+                        &agency.auth_type,
+                        &agency.auth_header,
+                        &agency.auth_password,
+                    ),
+                };
 
-                match last_updated_time {
-                    Ok(last_updated_time) => {
-                        let time_since_last_run = (SystemTime::now()
-                            .duration_since(UNIX_EPOCH)
-                            .expect("System time not working!")
-                            .as_millis() as u64)
-                            - last_updated_time;
+                let passwordtouse = match &agency.multiauth {
+                    Some(multiauth) => {
+                        let mut rng = rand::thread_rng();
+                        let random_auth = multiauth.choose(&mut rng).unwrap();
 
-                        if time_since_last_run < (reqquery.fetch_interval * 1000.0) as u64 {
-                            allowrun = false;
-                        }
+                        random_auth.to_string()
                     }
-                    Err(last_updated_time) => {
-                        println!("Error getting last updated time, probably its the first time running this agency {}", reqquery.onetrip);
-                        println!("{:#?}", last_updated_time);
-                    }
+                    None => agency.auth_password.clone(),
+                };
+
+                let grouped_fetch = join!(fetchurl(
+                    &fetch.vehicles,
+                    &agency.auth_header,
+                    &agency.auth_type,
+                    &passwordtouse,
+                    client.clone(),
+                    timeoutforfetch,
+                ),
+                fetchurl(
+                    &fetch.trips,
+                    &agency.auth_header,
+                    &agency.auth_type,
+                    &passwordtouse,
+                    client.clone(),
+                    timeoutforfetch,
+                ),
+                fetchurl(
+                    &fetch.alerts,
+                    &agency.auth_header,
+                    &agency.auth_type,
+                    &passwordtouse,
+                    client.clone(),
+                    timeoutforfetch,
+                )
+            );
+
+            let vehicles_result = grouped_fetch.0;
+            let trips_result = grouped_fetch.1;
+            let alerts_result = grouped_fetch.2;
+
+                if vehicles_result.is_some() {
+                    let bytes = vehicles_result.as_ref().unwrap().to_vec();
+
+                    println!("{} vehicles bytes: {}", &agency.onetrip, bytes.len());
+
+                    insert_gtfs_rt_bytes(
+                        &mut con,
+                        &bytes,
+                        &agency.onetrip,
+                        &("vehicles".to_string()),
+                    );
                 }
 
-                if allowrun {
+                if trips_result.is_some() {
+                    let bytes = trips_result.as_ref().unwrap().to_vec();
 
-                    let mut urltouse = reqquery.url.clone();
+                    println!("{} trips bytes: {}", &agency.onetrip, bytes.len());
 
-                    let passwordtouse = match reqquery.multiauth {
-                        Some(multiauth) => {
-                            let mut rng = rand::thread_rng();
-                            let random_auth = multiauth.choose(&mut rng).unwrap();
-
-                            random_auth.to_string()
-                        }
-                        None => reqquery.auth_password.clone(),
-                    };
-
-                    if !passwordtouse.is_empty() && reqquery.auth_type == "query_param" {
-                        urltouse = urltouse.replace("PASSWORD", &passwordtouse);
-                    }
-
-                    let mut req = client.get(urltouse);
-
-                    if reqquery.auth_type == "header" {
-                        req = req.header(&reqquery.auth_header, &passwordtouse);
-                    }
-
-                    let resp = req.timeout(Duration::from_millis(timeoutforfetch)).send().await;
-
-                    match resp {
-                        Ok(resp) => {
-                            if resp.status().is_success() {
-                                match resp.bytes().await {
-                                    Ok(bytes_pre) => {
-                                        let bytes = bytes_pre.to_vec();
-
-                                        println!(
-                                            "{} {} bytes: {}",
-                                            &reqquery.onetrip,
-                                            &reqquery.category,
-                                            bytes.len()
-                                        );
-                                        
-                                        let mut continue_run = true;
-
-                                        //if feed is OCTA
-                                        if reqquery.onetrip == "f-octa~rt" {
-                                            //if category is vehicles
-                                            if reqquery.category == "vehicles" {
-                                                //convert existing to structs and see if the feed has even changed
-
-                                                let new_proto = parse_protobuf_message(&bytes);
-
-                                                let old_data = con.get::<String, Vec<u8>>(format!(
-                                                    "gtfsrt|{}|{}",
-                                                    &reqquery.onetrip, &reqquery.category
-                                                ));
-
-                                                if old_data.is_ok() {
-                                                let old_proto =  parse_protobuf_message(&old_data.unwrap());
-
-                                                if new_proto.is_ok() && old_proto.is_ok() {
-                                                    println!("Comparing OCTA feeds");
-                                                    let new_proto = new_proto.unwrap();
-                                                    let old_proto = old_proto.unwrap();
-
-                                                    let newhash = octa_compute_into_hash(&new_proto);
-                                                    let oldhash = octa_compute_into_hash(&old_proto);
-
-                                                    if newhash == oldhash {
-                                                        continue_run = false;
-                                                        println!("Cancelled OCTA for having same hash");
-                                                    }
-                                                }
-                                                }
-                                                }
-                                            }
-                                        
-
-                                        if true == continue_run {
-                                            
-                                        insert_gtfs_rt_bytes(&mut con, &bytes, &reqquery.onetrip, &reqquery.category);
-                                        }
-                                    }
-                                    Err(_) => {
-                                        println!("error parsing bytes: {}", &reqquery.url);
-                                    }
-                                }
-                            }
-                            else if resp.status().is_redirection() {
-                                println!(
-                                    "{}{} {} HTTP redirect: {}{}",
-                                    color::Fg(color::Yellow),
-                                    &reqquery.onetrip,
-                                    &reqquery.category,
-                                    resp.status(),
-                                    style::Reset
-                                );
-                            }
-                            else {
-                                println!(
-                                    "{} {} HTTP error: {}",
-                                    &reqquery.onetrip,
-                                    &reqquery.category,
-                                    resp.status()
-                                );
-                            }
-                        }
-                        Err(e) => {
-                            println!("{}error fetching url: {} {:?}{}", color::Fg(color::Red), &reqquery.url, e.source().unwrap(), style::Reset);
-                        }
-                    }
+                    insert_gtfs_rt_bytes(&mut con, &bytes, &agency.onetrip, &("trips".to_string()));
                 }
+
+                if alerts_result.is_some() {
+                    let bytes = alerts_result.as_ref().unwrap().to_vec();
+
+                    println!("{} alerts bytes: {}", &agency.onetrip, bytes.len());
+
+                    insert_gtfs_rt_bytes(
+                        &mut con,
+                        &bytes,
+                        &agency.onetrip,
+                        &("alerts".to_string()),
+                    );
+                }
+
+                send_to_aspen(
+                    &agency.onetrip,
+                    &vehicles_result,
+                    &trips_result,
+                    &alerts_result,
+                    fetch.vehicles.is_some(),
+                    fetch.trips.is_some(),
+                    fetch.alerts.is_some(),
+                )
+                .await;
             }
         }))
         .buffer_unordered(threadcount)
         .collect::<Vec<()>>();
-        println!("Starting loop: {} fetches", &reqquery_vec.len());
+        println!("Starting loop: {} fetches", &agencies.len());
         fetches.await;
 
         let duration = lastloop.elapsed();
@@ -350,9 +271,9 @@ async fn main() -> color_eyre::eyre::Result<()> {
             style::Reset
         );
 
-        //if the iteration of the loop took <1 second, sleep for the remainder of the second
-        if (duration.as_millis() as i32) < 1000 {
-            let sleep_duration = Duration::from_millis(1000) - duration;
+        //if the iteration of the loop took <0.5 second, sleep for the remainder of the second
+        if (duration.as_millis() as i32) < 500 {
+            let sleep_duration = Duration::from_millis(500) - duration;
             println!("sleeping for {:?}", sleep_duration);
             std::thread::sleep(sleep_duration);
         }
@@ -370,6 +291,82 @@ fn convert_multiauth_to_vec(inputstring: &String) -> Option<Vec<String>> {
         }
 
         Some(outputvec)
+    } else {
+        None
+    }
+}
+
+async fn send_to_aspen(
+    agency: &String,
+    vehicles_result: &Option<Vec<u8>>,
+    trips_result: &Option<Vec<u8>>,
+    alerts_result: &Option<Vec<u8>>,
+    vehicles_exist: bool,
+    trips_exist: bool,
+    alerts_exist: bool,
+) {
+    //send data to aspen over tarpc
+}
+
+async fn fetchurl(
+    url: &Option<String>,
+    auth_header: &String,
+    auth_type: &String,
+    auth_password: &String,
+    client: ReqwestClient,
+    timeoutforfetch: u64,
+) -> Option<Vec<u8>> {
+    match url {
+        Some(url) => {
+            let mut req = client.get(url);
+
+            if auth_type == "header" {
+                req = req.header(auth_header, auth_password);
+            }
+
+            let resp = req
+                .timeout(Duration::from_millis(timeoutforfetch))
+                .send()
+                .await;
+
+            match resp {
+                Ok(resp) => {
+                    if resp.status().is_success() {
+                        match resp.bytes().await {
+                            Ok(bytes_pre) => {
+                                let bytes = bytes_pre.to_vec();
+                                Some(bytes)
+                            }
+                            _ => None,
+                        }
+                    } else {
+                        None
+                    }
+                }
+                Err(e) => {
+                    println!("error fetching url: {:?}", e);
+                    None
+                }
+            }
+        }
+        _ => None,
+    }
+}
+
+fn make_url(
+    url: &String,
+    auth_type: &String,
+    auth_header: &String,
+    auth_password: &String,
+) -> Option<String> {
+    if url.is_empty() == false {
+        let mut outputurl = url.clone();
+
+        if !auth_password.is_empty() && auth_type == "query_param" {
+            outputurl = outputurl.replace("PASSWORD", &auth_password);
+        }
+
+        Some(outputurl)
     } else {
         None
     }

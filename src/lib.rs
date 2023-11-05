@@ -48,19 +48,6 @@ pub mod insert {
         inserttimes(con, &onetrip, &category, &now_millis);
     }
 
-    fn inserttimes(con: &mut Connection, onetrip: &String, category: &String, now_millis: &String) {
-        let _: () = con
-            .set(
-                format!("gtfsrttime|{}|{}", &onetrip, &category),
-                &now_millis,
-            )
-            .unwrap();
-
-        let _: () = con
-            .set(format!("gtfsrtexists|{}", &onetrip), &now_millis)
-            .unwrap();
-    }
-
     pub fn insert_gtfs_rt(
         con: &mut Connection,
         data: &gtfs_rt::FeedMessage,
@@ -80,5 +67,18 @@ pub mod insert {
             .unwrap();
 
         inserttimes(con, &onetrip, &category, &now_millis);
+    }
+
+    fn inserttimes(con: &mut Connection, onetrip: &String, category: &String, now_millis: &String) {
+        let _: () = con
+            .set(
+                format!("gtfsrttime|{}|{}", &onetrip, &category),
+                &now_millis,
+            )
+            .unwrap();
+
+        let _: () = con
+            .set(format!("gtfsrtexists|{}", &onetrip), &now_millis)
+            .unwrap();
     }
 }
