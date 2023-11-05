@@ -8,6 +8,9 @@ use std::time::Instant;
 use std::time::UNIX_EPOCH;
 
 use kactus::insert::insert_gtfs_rt;
+use kactus::insert::insert_gtfs_rt_bytes;
+
+use crate::aspen::send_to_aspen;
 
 use serde_json;
 
@@ -347,43 +350,72 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             convert(&import_data, "LIRR", &input_gtfs_lirr);
         let vehiclepositions_mnr: Vec<gtfs_rt::FeedEntity> =
             convert(&import_data, "MNR", &input_gtfs_mnr);
-
-        insert_gtfs_rt(
-            &mut con,
-            &gtfs_rt::FeedMessage {
-                header: gtfs_rt::FeedHeader {
-                    gtfs_realtime_version: "2.0".to_string(),
-                    incrementality: Some(gtfs_rt::feed_header::Incrementality::FullDataset as i32),
-                    timestamp: Some(
-                        SystemTime::now()
-                            .duration_since(UNIX_EPOCH)
-                            .unwrap()
-                            .as_secs(),
-                    ),
-                },
-                entity: vehiclepositions_lirr,
+        
+        let lirrdata = gtfs_rt::FeedMessage {
+            header: gtfs_rt::FeedHeader {
+                gtfs_realtime_version: "2.0".to_string(),
+                incrementality: Some(gtfs_rt::feed_header::Incrementality::FullDataset as i32),
+                timestamp: Some(
+                    SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .unwrap()
+                        .as_secs(),
+                ),
             },
+            entity: vehiclepositions_lirr,
+        };
+
+        let mnrdata = gtfs_rt::FeedMessage {
+            header: gtfs_rt::FeedHeader {
+                gtfs_realtime_version: "2.0".to_string(),
+                incrementality: Some(gtfs_rt::feed_header::Incrementality::FullDataset as i32),
+                timestamp: Some(
+                    SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .unwrap()
+                        .as_secs(),
+                ),
+            },
+            entity: vehiclepositions_mnr,
+        };
+
+        let lirrbytes = lirrdata.encode_to_vec();
+        let mnrbytes = mnrdata.encode_to_vec();
+
+        insert_gtfs_rt_bytes(
+            &mut con,
+            &lirrbytes,
             &"f-mta~nyc~rt~lirr".to_string(),
             &"vehicles".to_string(),
         );
 
-        insert_gtfs_rt(
+        send_to_aspen(
+            "f-mta~nyc~rt~lirr",
+            &Some(lirrbytes),
+            &None,
+            &None,
+            true,
+            true,
+            false,
+            true
+        );
+
+        insert_gtfs_rt_bytes(
             &mut con,
-            &gtfs_rt::FeedMessage {
-                header: gtfs_rt::FeedHeader {
-                    gtfs_realtime_version: "2.0".to_string(),
-                    incrementality: Some(gtfs_rt::feed_header::Incrementality::FullDataset as i32),
-                    timestamp: Some(
-                        SystemTime::now()
-                            .duration_since(UNIX_EPOCH)
-                            .unwrap()
-                            .as_secs(),
-                    ),
-                },
-                entity: vehiclepositions_mnr,
-            },
+            &mnrbytes,
             &"f-mta~nyc~rt~mnr".to_string(),
             &"vehicles".to_string(),
+        );
+
+        send_to_aspen(
+            "f-mta~nyc~rt~mnr",
+            &Some(mnrbytes),
+            &None,
+            &None,
+            true,
+            true,
+            false,
+            true
         );
 
         //println!("{:?}", import_data);
