@@ -1076,19 +1076,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "http-body-util"
-version = "0.1.0-rc.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "08ef12f041acdd397010e5fb6433270c147d3b8b2d0a840cd7fff8e531dca5c8"
-dependencies = [
- "bytes 1.5.0",
- "futures-util",
- "http 0.2.9",
- "http-body 1.0.0-rc.2",
- "pin-project-lite",
-]
-
-[[package]]
 name = "httparse"
 version = "1.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1325,7 +1312,6 @@ dependencies = [
  "fasthash",
  "futures 0.3.29",
  "gtfs-rt",
- "http-body-util",
  "hyper 1.0.0-rc.4",
  "prost",
  "protobuf",
