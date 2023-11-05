@@ -297,7 +297,7 @@ fn convert_multiauth_to_vec(inputstring: &String) -> Option<Vec<String>> {
 }
 
 async fn send_to_aspen(
-    agency: &String,
+    agency: &str,
     vehicles_result: &Option<Vec<u8>>,
     trips_result: &Option<Vec<u8>>,
     alerts_result: &Option<Vec<u8>>,
