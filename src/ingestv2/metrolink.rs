@@ -74,7 +74,7 @@ async fn main() {
                 &mut alerts_con,
                 &metrolink_results.2.as_ref().unwrap(),
                 &"f-metrolinktrains~rt",
-                &"alerts".to_string(),
+                &("alerts".to_string()),
             );
             } else {
                 println!("Alerts crashed, skipping");
@@ -279,6 +279,8 @@ async fn get_metrolink_alerts(client: &ReqwestClient) -> Option<Vec<u8>> {
                         },
                         entity: alerts_gtfs_list
                     };
+
+                    println!("Alerts: {:#?}", feed_message);
 
                     let bytes:Vec<u8> = feed_message.encode_to_vec();
 
