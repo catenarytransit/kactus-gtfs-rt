@@ -66,10 +66,10 @@ async fn main() {
                 get_metrolink_alerts(&client)
             );
 
-
             let mut alerts_con = redisclient.get_connection().unwrap();
 
             if metrolink_results.2.is_some() {
+                println!("Alerts {} bytes", metrolink_results.2.as_ref().unwrap().len());
             insert_gtfs_rt_bytes(
                 &mut alerts_con,
                 &metrolink_results.2.as_ref().unwrap(),
