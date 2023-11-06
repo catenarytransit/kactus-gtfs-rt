@@ -69,12 +69,17 @@ async fn main() {
 
             let mut alerts_con = redisclient.get_connection().unwrap();
 
+            if metrolink_results.2.is_some() {
             insert_gtfs_rt_bytes(
                 &mut alerts_con,
                 &metrolink_results.2.as_ref().unwrap(),
                 &"f-metrolinktrains~rt",
                 &"alerts".to_string(),
             );
+            } else {
+                println!("Alerts crashed, skipping");
+            }
+
 
             send_to_aspen(
                 "f-metrolinktrains~rt",
