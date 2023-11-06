@@ -66,6 +66,16 @@ async fn main() {
                 get_metrolink_alerts(&client)
             );
 
+
+            let mut alerts_con = redisclient.get_connection().unwrap();
+
+            insert_gtfs_rt_bytes(
+                &mut alerts_con,
+                &metrolink_results.2.as_ref().unwrap(),
+                &"f-metrolinktrains~rt",
+                &"alerts".to_string(),
+            );
+
             send_to_aspen(
                 "f-metrolinktrains~rt",
                 &metrolink_results.0,
