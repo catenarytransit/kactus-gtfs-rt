@@ -1,15 +1,17 @@
-use crate::aspen::send_to_aspen;
-use protobuf::Message;
 use redis::Commands;
 use reqwest::Client as ReqwestClient;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use termion::{color, style};
-
+use prost::Message;
+use chrono::prelude::*;
+use chrono_tz::US::Pacific;
+use gtfs_rt::FeedMessage;
 use kactus::insert::insert_gtfs_rt_bytes;
+use regex::Regex;
 use kactus::parse_protobuf_message;
 use std::fs;
 
-mod aspen;
+use kactus::aspen::send_to_aspen;
 
 fn get_epoch_ms() -> u128 {
     SystemTime::now()
@@ -60,14 +62,15 @@ async fn main() {
                     "trips",
                     &mut last_trip_attempt,
                     &mut last_trip_protobuf_timestamp,
-                )
+                ),
+                get_metrolink_alerts(&client)
             );
 
             send_to_aspen(
                 "f-metrolinktrains~rt",
                 &metrolink_results.0,
                 &metrolink_results.1,
-                &None,
+                &metrolink_results.2,
                 true,
                 true,
                 true,
@@ -100,6 +103,182 @@ async fn main() {
                 }
             }
         }
+    }
+}
+#[derive(serde::Deserialize, Debug, Clone)]
+struct MetrolinkAlertsResults {
+    #[serde(rename="ServiceLines")]
+    service_lines: Vec<String>,
+    #[serde(rename="Advisories")]
+    advisories: Vec<MetrolinkAlertsAdvisories>
+}
+
+#[derive(serde::Deserialize, Debug, Clone)]
+struct MetrolinkAlertsAdvisories {
+    #[serde(rename="Line")]
+    line: String,
+    #[serde(rename="LineAbbreviation")]
+    line_abbreviation: String,
+    #[serde(rename="ServiceAdvisories")]
+    service_advisories: Vec<MetrolinkAlertsServiceAdvisories>
+}
+
+#[derive(serde::Deserialize, Debug, Clone)]
+#[serde(rename_all = "PascalCase")]
+struct MetrolinkAlertsServiceAdvisories {
+    id: i32,
+    message: String,
+    line: String,
+    platform: String,
+    playtime: Option<String>,
+    create_date: String,
+    start_date_time: Option<String>,
+    short_start_date_time: Option<String>,
+    end_date_time: Option<String>,
+    short_end_date_time: Option<String>,
+    //"Timestamp":"11/5/2023 4:16 PM",
+    timestamp: String,
+    #[serde(rename = "Type")]
+    alert_type: String,
+    details_page: String,
+    alert_details_page: Option<String>,
+    date_range_output: String
+}
+
+#[derive(serde::Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+struct MetrolinkAlertsRaw {
+    results: MetrolinkAlertsResults,
+    time_limit: i32,
+    minified: bool,
+    is_homepage: bool
+}
+
+fn metrolink_alert_line_abbrv_to_route_id(x:&str) -> &str {
+    match x {
+        "AV" => "Antelope Valley Line",
+        "IEOC" => "Inland Emp.-Orange Co. Line",
+        "OC" => "Orange County Line",
+        "SB" => "San Bernardino Line",
+        "VC" => "Ventura County Line",
+        "RIV" => "Riverside Line",
+        "91/PV" => "91 Line",
+        _ => ""
+    }
+}
+
+async fn get_metrolink_alerts(client: &ReqwestClient) -> Option<Vec<u8>> {
+    let alert_html = client
+        .get("https://metrolinktrains.com/train-status/")
+        .send()
+        .await;
+
+    match alert_html {
+        Ok(alert_html) => {
+            let re = Regex::new(r"<script\b[^>]*>\s+window.ml([\s\S]*?)<\/script>").unwrap();
+
+            let text = alert_html.text().await.unwrap();
+
+            let alertsscript = re.captures(text.as_str()).unwrap().get(0).unwrap().as_str();
+            let alertsscript = Regex::new("<script type=\\\"text/javascript\\\">\\s+window.ml = window.ml\\s+\\|\\|\\s+\\{\\};(\\s)+window.ml =").unwrap().replace(&alertsscript,"");
+            let alertsscript = Regex::new("</script>").unwrap().replace(&alertsscript,"");
+
+            let alertsscript = alertsscript.trim().replace("results", "\"results\"");
+            let alertsscript = alertsscript.replace("timeLimit", "\"timeLimit\"");
+            let alertsscript = alertsscript.replace("minified", "\"minified\"");
+            let alertsscript = alertsscript.replace("isHomepage", "\"isHomepage\"");
+            /*
+            let alertsscript = snailquote::unescape(alertsscript);
+
+            let alertsscript = alertsscript.unwrap();
+
+            let alertsscript = alertsscript.as_str();*/
+
+            //println!("Alerts script: {:}", alertsscript);
+
+            let alerts: Result<MetrolinkAlertsRaw, _> = serde_json::from_str(&alertsscript);
+
+            match alerts {
+                Ok(alerts) => {
+                    //println!("Alerts: {:#?}", alerts);
+
+                    let alerts_list = alerts.results.advisories.iter().map(|a| a.service_advisories.clone()).flatten().collect::<Vec<MetrolinkAlertsServiceAdvisories>>();
+
+
+                    let alerts_gtfs_list = alerts_list.iter().map(|x| {
+                        
+                    let mut metrolink_link = String::from("https://metrolinktrains.com/news/alert-details-page/");
+
+                    metrolink_link.push_str((x.details_page).as_str());
+
+                        gtfs_rt::FeedEntity {
+                            id: x.id.to_string(),
+                            is_deleted: Some(false),
+                            trip_update: None,
+                            vehicle: None,
+                            alert: Some(gtfs_rt::Alert {
+                                tts_description_text: None,
+                                tts_header_text: None,
+                                cause: None,
+                                effect: None,
+                                header_text: Some(gtfs_rt::TranslatedString {
+                                    translation: vec![gtfs_rt::translated_string::Translation {
+                                        text: x.message.clone(),
+                                        language: Some("en".to_string())
+                                    }]
+                                }),
+                                description_text: None,
+                                informed_entity: vec![gtfs_rt::EntitySelector {
+                                    agency_id: None,
+                                    route_id: Some(metrolink_alert_line_abbrv_to_route_id(&x.line).to_string()),
+                                    direction_id: None,
+                                    route_type: None,
+                                    trip: None,
+                                    stop_id: None
+                                }],
+                                active_period: vec![gtfs_rt::TimeRange {
+                                    start: None,
+                                    end: None
+                                }],
+                                cause_detail: None,
+                                effect_detail: None,
+                                image: None,
+                                image_alternative_text: None,
+                                severity_level: None,
+                                url: Some(gtfs_rt::TranslatedString {
+                                    translation: vec![gtfs_rt::translated_string::Translation {
+                                        text: metrolink_link,
+                                        language: Some("en".to_string())
+                                    }]
+                                }),
+                            }),
+                            shape: None
+                        }
+                    }).collect::<Vec<gtfs_rt::FeedEntity>>();
+
+                    let feed_message = FeedMessage {
+                        header: gtfs_rt::FeedHeader {
+                            gtfs_realtime_version: "2.0".to_string(),
+                            incrementality: Some(gtfs_rt::feed_header::Incrementality::FullDataset as i32),
+                            timestamp: Some(get_epoch_ms() as u64),
+                        },
+                        entity: alerts_gtfs_list
+                    };
+
+                    let bytes:Vec<u8> = feed_message.encode_to_vec();
+
+                    Some(bytes)
+                }
+                Err(error) => {
+                    println!("Error parsing alerts: {:#?}", error);
+                    None
+                }
+            }
+        }
+        Err(error) => {
+            println!("Error getting alerts: {:?}", error);
+            None
+        },
     }
 }
 
@@ -222,4 +401,18 @@ async fn runcategory(
     };
 
     None
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_metrolink_alerts() {
+        let client = ReqwestClient::new();
+
+        let alerts_result = get_metrolink_alerts(&client).await;
+
+        assert_eq!(alerts_result.is_some(), true);
+    }
 }

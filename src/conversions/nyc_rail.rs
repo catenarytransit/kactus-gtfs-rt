@@ -10,7 +10,7 @@ use std::time::UNIX_EPOCH;
 use kactus::insert::insert_gtfs_rt;
 use kactus::insert::insert_gtfs_rt_bytes;
 
-use crate::aspen::send_to_aspen;
+use kactus::aspen::send_to_aspen;
 
 use serde_json;
 
@@ -398,7 +398,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             true,
             false,
             true,
-        );
+        ).await;
 
         insert_gtfs_rt_bytes(
             &mut con,
@@ -416,7 +416,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             true,
             false,
             true,
-        );
+        ).await;
 
         //println!("{:?}", import_data);
 

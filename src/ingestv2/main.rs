@@ -15,8 +15,7 @@ use futures::future::join_all;
 use std::error::Error;
 use std::fs::File;
 use std::io::BufReader;
-
-mod aspen;
+use kactus::aspen;
 //stores the config for each agency
 #[derive(Debug, Clone)]
 struct AgencyInfo {
