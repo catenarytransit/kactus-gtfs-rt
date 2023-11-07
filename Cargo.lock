@@ -183,9 +183,9 @@ dependencies = [
 
 [[package]]
 name = "actix_block_ai_crawling"
-version = "0.2.3"
+version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0bfe4a07e75032e0b5ef2290b21fa935e9dd82fa5df0220f4f8f9f376f378d36"
+checksum = "8837a107ed33e050414ec0d341078b02f0b6c2d36e61b13859cfb734a7d3db75"
 dependencies = [
  "actix-web",
  "futures-util",
