@@ -222,9 +222,21 @@ async fn get_metrolink_alerts(client: &ReqwestClient) -> Option<Vec<u8>> {
 
                     let alerts_gtfs_list = alerts_list.iter().map(|x| {
                         
-                    let mut metrolink_link = String::from("https://metrolinktrains.com/news/alert-details-page/");
+                    let mut metrolink_link = String::from("https://metrolinktrains.com");
 
                     metrolink_link.push_str((x.details_page).as_str());
+
+                    let url_alert = match x.alert_details_page {
+                        Some(_) => {
+                            Some(gtfs_rt::TranslatedString {
+                                translation: vec![gtfs_rt::translated_string::Translation {
+                                    text: metrolink_link,
+                                    language: Some("en".to_string())
+                                }]
+                            })
+                        }
+                        None => None
+                    };
 
                         gtfs_rt::FeedEntity {
                             id: x.id.to_string(),
@@ -260,13 +272,8 @@ async fn get_metrolink_alerts(client: &ReqwestClient) -> Option<Vec<u8>> {
                                 image: None,
                                 image_alternative_text: None,
                                 severity_level: None,
-                                url: Some(gtfs_rt::TranslatedString {
-                                    translation: vec![gtfs_rt::translated_string::Translation {
-                                        text: metrolink_link,
-                                        language: Some("en".to_string())
-                                    }]
+                                url: url_alert
                                 }),
-                            }),
                             shape: None
                         }
                     }).collect::<Vec<gtfs_rt::FeedEntity>>();
