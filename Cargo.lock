@@ -183,15 +183,9 @@ dependencies = [
 
 [[package]]
 name = "actix_block_ai_crawling"
-<<<<<<< Updated upstream
 version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "752f9c0309ce457d0cd6652b2cbf9be1db851acaa72cf5b6e39a074eac0f642c"
-=======
-version = "0.2.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cf52ecbc732eaefdbfc97f08c859f3e14bdedf9e06c6a0db3b97fcc2b00885ea"
->>>>>>> Stashed changes
 dependencies = [
  "actix-web",
  "futures-util",
