@@ -72,8 +72,8 @@ struct SwiftlyVehicleInfo {
     vehicle_type: String,
     sch_adh_secs: f32,
     sch_adh: f32,
-    headway_secs: f32,
-    scheduled_headway_secs: f32,
+    //headway_secs: f32,
+    //scheduled_headway_secs: f32,
     previous_vehicle_id: String,
     //omit useless stuff
     driver: String,
@@ -88,7 +88,7 @@ struct SwiftlyVehicleLoc {
     lon: f32,
     time: u64,
     speed: f32,
-    heading: f32,
+    heading: Option<f32>,
     source: String
 }
 
