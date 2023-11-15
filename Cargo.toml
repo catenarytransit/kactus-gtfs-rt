@@ -67,4 +67,4 @@ path = "src/meerkat-manager/meerkat-fallback.rs"
 
 [[bin]]
 name = "swiftlyingest"
-path = "src/conversions/swiftly/main.rs"
+path = "src/swiftly-ingest/main.rs"
