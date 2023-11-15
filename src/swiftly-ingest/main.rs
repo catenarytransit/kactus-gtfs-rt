@@ -74,9 +74,9 @@ struct SwiftlyVehicleInfo {
     sch_adh: f32,
     //headway_secs: f32,
     //scheduled_headway_secs: f32,
-    previous_vehicle_id: String,
+    previous_vehicle_id: Option<String>,
     //omit useless stuff
-    driver: String,
+    driver: Option<String>,
     loc: SwiftlyVehicleLoc,
     in_yard: bool
 }
@@ -87,7 +87,7 @@ struct SwiftlyVehicleLoc {
     lat: f32,
     lon: f32,
     time: u64,
-    speed: f32,
+    speed: Option<f32>,
     heading: Option<f32>,
     source: String
 }
@@ -223,5 +223,12 @@ mod tests {
         let routes_file_la_bus_910 = fetch_per_route_details(&client, &String::from("lametro"),  &String::from("910-13168")).await;
         assert!(routes_file_octa_bus_79.is_ok());
         assert!(routes_file_la_bus_910.is_ok());
+        assert!(fetch_per_route_details(&client, &String::from("septa"),  &String::from("4")).await.is_ok());
+        assert!(fetch_per_route_details(&client, &String::from("octa"),  &String::from("29")).await.is_ok());
+        assert!(fetch_per_route_details(&client, &String::from("marta"),  &String::from("155")).await.is_ok());
+        assert!(fetch_per_route_details(&client, &String::from("lametro-rail"),  &String::from("801")).await.is_ok());
+        assert!(fetch_per_route_details(&client, &String::from("lametro-rail"),  &String::from("802")).await.is_ok());
+        assert!(fetch_per_route_details(&client, &String::from("lametro-rail"),  &String::from("804")).await.is_ok());
+        assert!(fetch_per_route_details(&client, &"rtd-denver".to_string(), &"15".to_string()).await.is_ok());
     }
 }
