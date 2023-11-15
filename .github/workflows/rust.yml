@@ -18,3 +18,5 @@ jobs:
       run: sudo apt install protobuf-compiler redis
     - name: Build
       run: cargo build --verbose
+    - name: Test
+      run: cargo test --verbose
