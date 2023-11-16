@@ -93,7 +93,7 @@ struct SwiftlyVehicleInfo {
     occupancy_percent: Option<i32>,
     occupancy_status: Option<String>,
     service_date: String,
-    run_id: String,
+    run_id: Option<String>,
     service_id: String,
     service_name: String,
     is_added_service: bool,
