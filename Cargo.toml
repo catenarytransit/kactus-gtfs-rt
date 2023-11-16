@@ -64,7 +64,3 @@ path = "src/conversions/doublemap/main.rs"
 [[bin]]
 name = "meerkat-fallback"
 path = "src/meerkat-manager/meerkat-fallback.rs"
-
-[[bin]]
-name = "swiftlyingest"
-path = "src/swiftly-ingest/main.rs"
