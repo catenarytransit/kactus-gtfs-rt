@@ -65,8 +65,6 @@ async fn main() -> color_eyre::eyre::Result<()> {
 
     let mut agencies: Vec<AgencyInfo> = Vec::new();
 
-    let client = ReqwestClient::new();
-
     for record in reader.records() {
         match record {
             Ok(record) => {
