@@ -82,7 +82,7 @@ struct SwiftlyVehicleInfo {
     is_predictable: bool,
     trip: String,
     trip_short_name: String,
-    trip_pattern: String.
+    trip_pattern: String,
     next_stop_id: String,
     next_stop_name: String,
     driver: Option<String>,
