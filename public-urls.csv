@@ -88,7 +88,7 @@ f-djn-centralfloridaregionaltransitauthority~rt,http://gtfsrt.golynx.com/gtfsrt/
 f-9q5-govcbus~rt,https://govcbus.com/gtfs-rt/vehiclepositions,https://govcbus.com/gtfs-rt/tripupdates,https://govcbus.com/gtfs-rt/alerts,false,,,,1,
 f-f0q2-greatersudburytransit~rt,https://sudbury.tmix.se/gtfs-realtime/vehiclepositions.pb,https://sudbury.tmix.se/gtfs-realtime/tripupdates.pb,https://sudbury.tmix.se/gtfs-realtime/alerts.pb,false,,,,1,
 f-peoplemover~rt,,http://gtfs-rt.codeforanchorage.org/people_mover.pb,,false,,,,1,
-f-bigbluebus~rt,http://gtfs.bigbluebus.com/vehiclepositions.bin,http://gtfs.bigbluebus.com/tripupdates.bin,http://gtfs.bigbluebus.com/alerts.bin,false,,,,1,
+f-bigbluebus~rt,https://transitime-api.goswift.ly/api/v1/key/81YENWXv/agency/big-blue-bus/command/gtfs-rt/vehiclePositions,http://gtfs.bigbluebus.com/tripupdates.bin,http://gtfs.bigbluebus.com/alerts.bin,false,,,,1,
 f-halifax~rt,http://gtfs.halifax.ca/realtime/Vehicle/VehiclePositions.pb,http://gtfs.halifax.ca/realtime/TripUpdate/TripUpdates.pb,http://gtfs.halifax.ca/realtime/Alert/Alerts.pb,false,,,,1,
 f-u0j-torino~rt,http://percorsieorari.gtt.to.it/das_gtfsrt/vehicle_position.aspx,http://percorsieorari.gtt.to.it/das_gtfsrt/trip_update.aspx,http://percorsieorari.gtt.to.it/das_gtfsrt/alerts.aspx,false,,,,1,
 f-guelph~rt,http://transitgtfs.guelph.ca:9780/TMGTFSRealTimeWebService/Vehicle/VehiclePositions.pb,http://transitgtfs.guelph.ca:9780/TMGTFSRealTimeWebService/TripUpdate/TripUpdates.pb,http://transitgtfs.guelph.ca:9780/TMGTFSRealTimeWebService/Alert/Alerts.pb,false,,,,1,
