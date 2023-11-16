@@ -289,6 +289,7 @@ async fn fetchurl(
                                 _ => None,
                             }
                         } else {
+                            println!("{}:{:?}", &url, resp.status());
                             None
                         }
                     }
