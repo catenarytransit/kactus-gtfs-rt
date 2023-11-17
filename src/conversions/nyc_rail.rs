@@ -236,12 +236,17 @@ fn convert(
                             None => None,
                         }
                     }
-                    _ => match &supporting_gtfs {
-                        Some(supporting_gtfs) => {
-                            supporting_gtfs.clone().vehicle.unwrap().trip.clone()
+                    "LIRR" => {
+                        println!("supporting gtfs {:?}", &supporting_gtfs);
+
+                        match &supporting_gtfs {
+                            Some(supporting_gtfs) => {
+                                supporting_gtfs.clone().vehicle.unwrap().trip.clone()
+                            }
+                            None => None,
                         }
-                        None => None,
                     },
+                    _ => panic!("Not MNR or LIRR")
                 },
                 position: Some(gtfs_rt::Position {
                     latitude: mta.location.latitude,
