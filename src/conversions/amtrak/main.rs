@@ -38,5 +38,7 @@ let client = reqwest::Client::new();
             false,
             false,
         ).await;
+
+        std::thread::sleep(std::time::Duration::from_millis(500));
     }
 }
