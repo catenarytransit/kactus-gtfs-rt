@@ -37,6 +37,8 @@ regex = "1.10.2"
 snailquote = "0.3.1"
 chrono = "0.4.31"
 chrono-tz = "0.8.4"
+openssl = "0.10.59"
+amtrak-gtfs-rt = {git = "https://github.com/CatenaryMaps/amtrak-gtfs-rt"}
 
 [lib]
 path = "src/lib.rs"
@@ -64,3 +66,7 @@ path = "src/conversions/doublemap/main.rs"
 [[bin]]
 name = "meerkat-fallback"
 path = "src/meerkat-manager/meerkat-fallback.rs"
+
+[[bin]]
+name = "ingestamtrak"
+path = "src/conversions/amtrak/main.rs"

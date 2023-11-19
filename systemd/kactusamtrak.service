@@ -1,0 +1,15 @@
+[Unit]
+Description=Kactus Amtrak
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=on-failure
+RestartSec=1
+User=lolpro11
+ExecStart=/usr/local/bin/cargo run --bin ingestamtrak
+WorkingDirectory=/opt/kactus-gtfs-rt
+
+[Install]
+WantedBy=multi-user.target
