@@ -351,6 +351,116 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
     }
 }
 
+async fn gtfsrtws(req: HttpRequest) -> impl Responder {
+    let redisclient = redis::Client::open("redis://127.0.0.1:6379/").unwrap();
+    let mut con = redisclient.get_connection().unwrap();
+    let qs = QString::from(req.query_string());
+    if qs.get("feed").is_none() {return HttpResponse::NotFound().insert_header(("Content-Type", "text/plain")).body("Error: No feed specified\n")}
+    let feed = qs.get("feed").unwrap();
+    if qs.get("category").is_none() {return HttpResponse::NotFound().insert_header(("Content-Type", "text/plain")).body("Error: No category specified\n")}
+    let category = qs.get("category").unwrap();
+    let doesexist = con.get::<String, u64>(format!("gtfsrttime|{}|{}", &feed, &category));
+    match doesexist {
+        Ok(timeofcache) => {
+            let data = con
+                .get::<String, Vec<u8>>(format!("gtfsrt|{}|{}", &feed, &category));
+            match data {
+                Ok(data) => {
+                    let suicidebutton = qs.get("suicidebutton");
+                    if suicidebutton.is_some() {
+                        let suicidebutton = suicidebutton.unwrap();
+                        if suicidebutton == "true" {
+                            return HttpResponse::Ok()
+                                .insert_header((
+                                    "Content-Type",
+                                    "application/x-google-protobuf",
+                                ))
+                                .body(data);
+                        }
+                    }
+                    let timeofclientcache = qs.get("timeofcache");
+                    let proto = parse_protobuf_message(&data);
+                    let hashofresult = match proto {
+                        Ok(_) => fasthash::metro::hash64(
+                        data.as_slice(),
+                    ),
+                        Err(_) => {let mut rng = rand::thread_rng();
+                            rng.gen::<u64>()
+                    }
+                };
+                    if timeofclientcache.is_some() {
+                        let timeofclientcache = timeofclientcache.unwrap();
+                        let timeofclientcache = (*timeofclientcache).parse::<u64>();
+                        if timeofclientcache.is_ok() {
+                            let timeofclientcache = timeofclientcache.unwrap();
+                            if timeofclientcache >= timeofcache {return HttpResponse::NoContent().body("");}
+                            match &proto {
+                                Ok(proto) => {
+                                    let headertimestamp = proto.header.timestamp;
+                                    if headertimestamp.is_some() {
+                                        if timeofclientcache
+                                            >= headertimestamp.unwrap()
+                                        {
+                                            return HttpResponse::NoContent()
+                                                .body("");
+                                        }
+                                    }
+                                }
+                                Err(bruh) => {
+                                    println!("{:#?}", bruh);
+                                    let skipfailure = qs.get("skipfailure");
+                                    let mut allowcrash = true;
+                                    if skipfailure.is_some() {
+                                        if skipfailure.unwrap() == "true" {
+                                            allowcrash = false;
+                                        }
+                                    }
+                                    if allowcrash {
+                                        return HttpResponse::InternalServerError()
+                                            .body("protobuf failed to parse");
+                                    }
+                                }
+                            }
+                        }
+                        let hashofbodyclient = qs.get("bodyhash");
+                        if hashofbodyclient.is_some() {
+                            let hashofbodyclient = hashofbodyclient.unwrap();
+                            if (&proto).is_ok() {
+                                let clienthash = hashofbodyclient.parse::<u64>();
+                                if clienthash.is_ok() {
+                                    let clienthash = clienthash.unwrap();
+                                    if clienthash == hashofresult {
+                                        return HttpResponse::NoContent().body("");
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    HttpResponse::Ok()
+                        .insert_header((
+                            "Content-Type",
+                            "application/x-google-protobuf",
+                        ))
+                        .insert_header(("hash", hashofresult))
+                        .body(data)
+                }
+                Err(e) => {
+                    println!("Error: {:?}", e);
+                    HttpResponse::NotFound()
+                        .insert_header(("Content-Type", "text/plain"))
+                        .body(format!("Error: {}\n", e))
+                }
+            }
+        }
+        Err(_e) => {
+            return HttpResponse::NotFound()
+                .insert_header(("Content-Type", "text/plain"))
+                .body(format!("Error in connecting to redis\n"));
+        }
+    }
+}
+
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     // Create a new HTTP server.
@@ -373,10 +483,11 @@ async fn main() -> std::io::Result<()> {
             .route("/gtfsrtasjson", web::get().to(gtfsrttojson))
             .route("/gtfsrttimes", web::get().to(gtfsrttimes))
             .route("/gtfsrttimes/", web::get().to(gtfsrttimes))
+            .route("/gtfsrtws/", web::get().to(gtfsrtws))
+            .route("/gtfsrtws", web::get().to(gtfsrtws))
     })
     .workers(4);
 
-    // Bind the server to port 8080.
     let _ = builder.bind("127.0.0.1:54105").unwrap().run().await;
 
     Ok(())
