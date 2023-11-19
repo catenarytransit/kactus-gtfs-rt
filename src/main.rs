@@ -1,6 +1,6 @@
-use actix::{Actor, StreamHandler, AsyncContext, ActorContext};
+use actix::{Actor, StreamHandler};
 use actix_web::{
-    middleware::DefaultHeaders, web, App, HttpRequest, HttpResponse, HttpServer, Responder, Error
+    middleware::DefaultHeaders, web, App, HttpRequest, HttpResponse, HttpServer, Responder,
 };
 use actix_web_actors::ws;
 use rand::Rng;
@@ -102,7 +102,7 @@ impl Actor for GtfsWs {
     }
 }
 impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for GtfsWs {
-    fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
+    fn handle(&mut self, _msg: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
         let _ = ctx;
     }
 }
