@@ -354,11 +354,15 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
 
     let query_str = req.query_string(); // "name=ferret"
     let qs = QString::from(query_str);
-    let feed = qs.get("feed");
-
-    let raw = qs.get("raw");
-
-    let usejson = match raw {
+    let feed = match qs.get("feed") {
+        Some(feed) => feed.to_string(),
+        None => return HttpResponse::NotFound().insert_header(("Content-Type", "text/plain")).body("Error: No feed specified\n"),
+    };
+    let category = match qs.get("category") {
+        Some(category) => category.to_string(),
+        None => return HttpResponse::NotFound().insert_header(("Content-Type", "text/plain")).body("Error: No category specified\n"),
+    };
+    let usejson = match qs.get("raw") {
         Some(raw) => {
             if raw == "true" {
                 false
@@ -368,77 +372,46 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
         }
         None => true,
     };
-
-    match feed {
-        Some(feed) => {
-            let category = qs.get("category");
-
-            //HttpResponse::Ok().body(format!("Requested {}/{}", feed, category))
-
-            match category {
-                Some(category) => {
-                    let doesexist =
-                        con.get::<String, u64>(format!("gtfsrttime|{}|{}", feed, category));
-
-                    match doesexist {
-                        Ok(_timeofcache) => {
-                            let data =
-                                con.get::<String, Vec<u8>>(format!("gtfsrt|{}|{}", feed, category));
-
-                            match data {
-                                Ok(data) => {
-                                    let proto = parse_protobuf_message(&data);
-
-                                    match proto {
-                                        Ok(proto) => {
-                                            if usejson {
-                                                let protojson =
-                                                    serde_json::to_string(&proto).unwrap();
-
-                                                HttpResponse::Ok()
-                                                    .insert_header((
-                                                        "Content-Type",
-                                                        "application/json",
-                                                    ))
-                                                    .body(protojson)
-                                            } else {
-                                                let protojson = format!("{:#?}", proto);
-
-                                                HttpResponse::Ok().body(protojson)
-                                            }
-                                        }
-                                        Err(proto) => {
-                                            println!("Error parsing protobuf");
-
-                                            println!("{:#?}", proto);
-
-                                            HttpResponse::NotFound().body(format!("{:#?}", proto))
-                                        }
-                                    }
-                                }
-                                Err(e) => HttpResponse::InternalServerError()
-                                    .insert_header(("Content-Type", "text/plain"))
-                                    .body(format!("Error: {}\n", e)),
+    let doesexist = con.get::<String, u64>(format!("gtfsrttime|{}|{}", feed, category));
+    match doesexist {
+        Ok(_timeofcache) => {
+            let data =
+                con.get::<String, Vec<u8>>(format!("gtfsrt|{}|{}", feed, category));
+            match data {
+                Ok(data) => {
+                    let proto = parse_protobuf_message(&data);
+                    match proto {
+                        Ok(proto) => {
+                            if usejson {
+                                let protojson =
+                                    serde_json::to_string(&proto).unwrap();
+                                HttpResponse::Ok()
+                                    .insert_header((
+                                        "Content-Type",
+                                        "application/json",
+                                    ))
+                                    .body(protojson)
+                            } else {
+                                let protojson = format!("{:#?}", proto);
+                                HttpResponse::Ok().body(protojson)
                             }
                         }
-                        Err(_e) => {
-                            return HttpResponse::InternalServerError()
-                                .insert_header(("Content-Type", "text/plain"))
-                                .body(format!("Error in connecting to redis\n"))
+                        Err(proto) => {
+                            println!("Error parsing protobuf");
+                            println!("{:#?}", proto);
+                            HttpResponse::InternalServerError().body(format!("{:#?}", proto))
                         }
                     }
                 }
-                None => {
-                    return HttpResponse::NotFound()
-                        .insert_header(("Content-Type", "text/plain"))
-                        .body("Error: No category specified\n")
-                }
+                Err(e) => HttpResponse::InternalServerError()
+                    .insert_header(("Content-Type", "text/plain"))
+                    .body(format!("Error: {}\n", e)),
             }
         }
-        None => {
-            return HttpResponse::NotFound()
+        Err(_e) => {
+            return HttpResponse::InternalServerError()
                 .insert_header(("Content-Type", "text/plain"))
-                .body("Error: No feed specified\n")
+                .body(format!("Error in connecting to redis\n"))
         }
     }
 }
