@@ -1,4 +1,4 @@
-use actix::{Actor, StreamHandler, AsyncContext};
+use actix::{Actor, StreamHandler, AsyncContext, ActorContext};
 use actix_web::{
     middleware::DefaultHeaders, web, App, HttpRequest, HttpResponse, HttpServer, Responder, Error
 };
@@ -12,14 +12,98 @@ use qstring::QString;
 use std::time::Instant;
 use serde::Serialize;
 
-pub struct GtfsWs;
+pub struct GtfsWs {
+    feed: String,
+    category: String,
+    hashofbodyclient: Option<String>,
+    suicidebutton: bool,
+    skipfailure: Option<String>,
+    timeofclientcache: Option<String>,
+}
+
 impl Actor for GtfsWs {
     type Context = ws::WebsocketContext<Self>;
     fn started(&mut self, ctx: &mut Self::Context) {
+        let redisclient = redis::Client::open("redis://127.0.0.1:6379/").unwrap();
+        let mut con = redisclient.get_connection().unwrap();
+        let feed = &self.feed;
+        let category = &self.category;
+        let doesexist = con.get::<String, u64>(format!("gtfsrttime|{}|{}", &feed, &category));
+        if doesexist.is_err() {
+            ctx.text(format!("Error in connecting to redis\n"));
+            return ctx.close(None);
+        }
+        let timeofcache = doesexist.unwrap();
+        let data = con.get::<String, Vec<u8>>(format!("gtfsrt|{}|{}", &feed, &category));
+        if data.is_err() {
+            println!("Error: {:?}", data);
+            ctx.text(format!("Error: {:?}\n", data));
+            return ctx.close(None);
+        }
+        let data = data.unwrap();
+        if self.suicidebutton { return ctx.binary(data)}
+        let proto = parse_protobuf_message(&data);
+        let hashofresult = match proto {
+                Ok(_) => fasthash::metro::hash64(
+                data.as_slice(),
+            ),
+                Err(_) => {let mut rng = rand::thread_rng();
+                    rng.gen::<u64>()
+            }
+        };
+        let timeofclientcache = &self.timeofclientcache;
+        if timeofclientcache.is_some() {
+            let timeofclientcache = timeofclientcache.clone().unwrap();
+            let timeofclientcache = (*timeofclientcache).parse::<u64>();
+            if timeofclientcache.is_ok() {
+                let timeofclientcache = timeofclientcache.unwrap();
+                if timeofclientcache >= timeofcache {return ctx.text("")}
+                match &proto {
+                    Ok(proto) => {
+                        let headertimestamp = proto.header.timestamp;
+                        if headertimestamp.is_some() {
+                            if timeofclientcache
+                                >= headertimestamp.unwrap()
+                            {
+                                return ctx.text("")
+                            }
+                        }
+                    }
+                    Err(bruh) => {
+                        println!("{:#?}", bruh);
+                        let skipfailure = &self.skipfailure;
+                        let mut allowcrash = true;
+                        if skipfailure.is_some() {
+                            if skipfailure.clone().unwrap() == "true" {
+                                allowcrash = false;
+                            }
+                        }
+                        if allowcrash {
+                            ctx.text("protobuf failed to parse");
+                            return ctx.close(None);
+                        }
+                    }
+                }
+            }
+            let hashofbodyclient = &self.hashofbodyclient;
+            if hashofbodyclient.is_some() {
+                let hashofbodyclient = hashofbodyclient.clone().unwrap();
+                if (&proto).is_ok() {
+                    let clienthash = hashofbodyclient.parse::<u64>();
+                    if clienthash.is_ok() {
+                        if clienthash.unwrap() == hashofresult {
+                            return ctx.text("")
+                        }
+                    }
+                }
+            }
+        }
+        ctx.binary(data)
     }
 }
 impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for GtfsWs {
     fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
+        let _ = ctx;
     }
 }
 
@@ -359,8 +443,33 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
     }
 }
 
-async fn gtfsrtws(req: HttpRequest, stream: web::Payload) -> Result<HttpResponse, Error>  {
-    let resp = ws::start(GtfsWs {}, &req, stream);
+async fn gtfsrtws(req: HttpRequest, stream: web::Payload) -> Result<HttpResponse, actix_web::Error>  {
+    let qs = QString::from(req.query_string());
+    let feed = match qs.get("feed") {
+        Some(feed) => feed.to_string(),
+        None => return Ok(HttpResponse::NotFound().insert_header(("Content-Type", "text/plain")).body("Error: No feed specified\n")),
+    };
+    let category = match qs.get("category") {
+        Some(category) => category.to_string(),
+        None => return Ok(HttpResponse::NotFound().insert_header(("Content-Type", "text/plain")).body("Error: No category specified\n")),
+    };
+    let suicidebutton = match qs.get("suicidebutton") {
+        Some(_) => true,
+        None => false,
+    };
+    let timeofclientcache = match qs.get("timeofcache") {
+        Some(timeofcache) => Some(timeofcache.to_string()),
+        None => None,
+    };
+    let hashofbodyclient = match qs.get("bodyhash") {
+        Some(hashofbodyclient) => Some(hashofbodyclient.to_string()),
+        None => None,
+    };
+    let skipfailure = match qs.get("skipfailure") {
+        Some(skipfailure) => Some(skipfailure.to_string()),
+        None => None,
+    };
+    let resp = ws::start(GtfsWs {feed, category, suicidebutton, skipfailure, timeofclientcache, hashofbodyclient}, &req, stream);
     println!("{:?}", resp);
     resp
 }
