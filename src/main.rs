@@ -158,14 +158,14 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
                                 }
                                 Err(e) => {
                                     println!("Error: {:?}", e);
-                                    HttpResponse::NotFound()
+                                    HttpResponse::InternalServerError()
                                         .insert_header(("Content-Type", "text/plain"))
                                         .body(format!("Error: {}\n", e))
                                 }
                             }
                         }
                         Err(_e) => {
-                            return HttpResponse::NotFound()
+                            return HttpResponse::InternalServerError()
                                 .insert_header(("Content-Type", "text/plain"))
                                 .body(format!("Error in connecting to redis\n"));
                         }
@@ -323,13 +323,13 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
                                         }
                                     }
                                 }
-                                Err(e) => HttpResponse::NotFound()
+                                Err(e) => HttpResponse::InternalServerError()
                                     .insert_header(("Content-Type", "text/plain"))
                                     .body(format!("Error: {}\n", e)),
                             }
                         }
                         Err(_e) => {
-                            return HttpResponse::NotFound()
+                            return HttpResponse::InternalServerError()
                                 .insert_header(("Content-Type", "text/plain"))
                                 .body(format!("Error in connecting to redis\n"))
                         }
@@ -359,7 +359,7 @@ async fn gtfsrtws(req: HttpRequest) -> impl Responder {
     if qs.get("category").is_none() {return HttpResponse::NotFound().insert_header(("Content-Type", "text/plain")).body("Error: No category specified\n")}
     let category = qs.get("category").unwrap();
     let doesexist = con.get::<String, u64>(format!("gtfsrttime|{}|{}", &feed, &category));
-    if doesexist.is_err() {return HttpResponse::NotFound().insert_header(("Content-Type", "text/plain")).body(format!("Error in connecting to redis\n"));}
+    if doesexist.is_err() {return HttpResponse::InternalServerError().insert_header(("Content-Type", "text/plain")).body(format!("Error in connecting to redis\n"));}
     let timeofcache = doesexist.unwrap();
     let data = con.get::<String, Vec<u8>>(format!("gtfsrt|{}|{}", &feed, &category));
     match data {
@@ -444,7 +444,7 @@ async fn gtfsrtws(req: HttpRequest) -> impl Responder {
         }
         Err(e) => {
             println!("Error: {:?}", e);
-            HttpResponse::NotFound()
+            HttpResponse::InternalServerError()
                 .insert_header(("Content-Type", "text/plain"))
                 .body(format!("Error: {}\n", e))
         }
