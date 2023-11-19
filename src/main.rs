@@ -362,8 +362,7 @@ async fn gtfsrtws(req: HttpRequest) -> impl Responder {
     let doesexist = con.get::<String, u64>(format!("gtfsrttime|{}|{}", &feed, &category));
     match doesexist {
         Ok(timeofcache) => {
-            let data = con
-                .get::<String, Vec<u8>>(format!("gtfsrt|{}|{}", &feed, &category));
+            let data = con.get::<String, Vec<u8>>(format!("gtfsrt|{}|{}", &feed, &category));
             match data {
                 Ok(data) => {
                     let suicidebutton = qs.get("suicidebutton");
