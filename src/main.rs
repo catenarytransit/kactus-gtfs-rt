@@ -1,6 +1,7 @@
 use actix_web::{
     middleware::DefaultHeaders, web, App, HttpRequest, HttpResponse, HttpServer, Responder, Error
 };
+use actix_web_actors::ws;
 use rand::Rng;
 use redis::Commands;
 extern crate qstring;
@@ -345,6 +346,7 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
 }
 
 async fn gtfsrtws(req: HttpRequest, stream: web::Payload) -> Result<HttpResponse, Error>  {
+    let resp = ws::start(MyWs {}, &req, stream);
     let redisclient = redis::Client::open("redis://127.0.0.1:6379/").unwrap();
     let mut con = redisclient.get_connection().unwrap();
     let qs = QString::from(req.query_string());
