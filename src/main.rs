@@ -1,3 +1,4 @@
+use actix::{Actor, StreamHandler, AsyncContext};
 use actix_web::{
     middleware::DefaultHeaders, web, App, HttpRequest, HttpResponse, HttpServer, Responder, Error
 };
@@ -10,6 +11,19 @@ use kactus::parse_protobuf_message;
 use qstring::QString;
 use std::time::Instant;
 use serde::Serialize;
+
+pub struct GtfsWs;
+impl Actor for GtfsWs {
+    type Context = ws::WebsocketContext<Self>;
+    fn started(&mut self, ctx: &mut Self::Context) {
+    }
+}
+impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for GtfsWs {
+    fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
+    }
+}
+
+
 
 #[derive(Serialize)]
 pub struct FeedTimes {
@@ -346,105 +360,9 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
 }
 
 async fn gtfsrtws(req: HttpRequest, stream: web::Payload) -> Result<HttpResponse, Error>  {
-    let resp = ws::start(MyWs {}, &req, stream);
-    let redisclient = redis::Client::open("redis://127.0.0.1:6379/").unwrap();
-    let mut con = redisclient.get_connection().unwrap();
-    let qs = QString::from(req.query_string());
-    if qs.get("feed").is_none() {
-        return Ok(HttpResponse::NotFound().insert_header(("Content-Type", "text/plain")).body("Error: No feed specified\n"));
-    }
-    let feed = qs.get("feed").unwrap();
-    if qs.get("category").is_none() {
-        return Ok(HttpResponse::NotFound().insert_header(("Content-Type", "text/plain")).body("Error: No category specified\n"));
-    }
-    let category = qs.get("category").unwrap();
-    let doesexist = con.get::<String, u64>(format!("gtfsrttime|{}|{}", &feed, &category));
-    if doesexist.is_err() {
-        return Ok(HttpResponse::InternalServerError().insert_header(("Content-Type", "text/plain")).body(format!("Error in connecting to redis\n")));
-    }
-    let timeofcache = doesexist.unwrap();
-    let data = con.get::<String, Vec<u8>>(format!("gtfsrt|{}|{}", &feed, &category));
-    if data.is_err() {
-        println!("Error: {:?}", data);
-        return Ok(HttpResponse::InternalServerError().insert_header(("Content-Type", "text/plain")).body(format!("Error: {:?}\n", data)));
-    }
-    let data = data.unwrap();
-    let suicidebutton = qs.get("suicidebutton");
-    if suicidebutton.is_some() {
-        let suicidebutton = suicidebutton.unwrap();
-        if suicidebutton == "true" {
-            return Ok(HttpResponse::Ok()
-                .insert_header((
-                    "Content-Type",
-                    "application/x-google-protobuf",
-                ))
-                .body(data));
-        }
-    }
-    let timeofclientcache = qs.get("timeofcache");
-    let proto = parse_protobuf_message(&data);
-    let hashofresult = match proto {
-            Ok(_) => fasthash::metro::hash64(
-            data.as_slice(),
-        ),
-            Err(_) => {let mut rng = rand::thread_rng();
-                rng.gen::<u64>()
-        }
-    };
-    if timeofclientcache.is_some() {
-        let timeofclientcache = timeofclientcache.unwrap();
-        let timeofclientcache = (*timeofclientcache).parse::<u64>();
-        if timeofclientcache.is_ok() {
-            let timeofclientcache = timeofclientcache.unwrap();
-            if timeofclientcache >= timeofcache {return Ok(HttpResponse::NoContent().body(""));}
-            match &proto {
-                Ok(proto) => {
-                    let headertimestamp = proto.header.timestamp;
-                    if headertimestamp.is_some() {
-                        if timeofclientcache
-                            >= headertimestamp.unwrap()
-                        {
-                            return Ok(HttpResponse::NoContent().body(""));
-                        }
-                    }
-                }
-                Err(bruh) => {
-                    println!("{:#?}", bruh);
-                    let skipfailure = qs.get("skipfailure");
-                    let mut allowcrash = true;
-                    if skipfailure.is_some() {
-                        if skipfailure.unwrap() == "true" {
-                            allowcrash = false;
-                        }
-                    }
-                    if allowcrash {
-                        return Ok(HttpResponse::InternalServerError()
-                            .body("protobuf failed to parse"));
-                    }
-                }
-            }
-        }
-        let hashofbodyclient = qs.get("bodyhash");
-        if hashofbodyclient.is_some() {
-            let hashofbodyclient = hashofbodyclient.unwrap();
-            if (&proto).is_ok() {
-                let clienthash = hashofbodyclient.parse::<u64>();
-                if clienthash.is_ok() {
-                    let clienthash = clienthash.unwrap();
-                    if clienthash == hashofresult {
-                        return Ok(HttpResponse::NoContent().body(""));
-                    }
-                }
-            }
-        }
-    }
-    Ok(HttpResponse::Ok()
-        .insert_header((
-            "Content-Type",
-            "application/x-google-protobuf",
-        ))
-        .insert_header(("hash", hashofresult))
-        .body(data))
+    let resp = ws::start(GtfsWs {}, &req, stream);
+    println!("{:?}", resp);
+    resp
 }
 
 #[actix_web::main]
