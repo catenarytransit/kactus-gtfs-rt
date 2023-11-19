@@ -1,23 +1,17 @@
-use actix_web::dev::Service;
 use actix_web::{
-    middleware::DefaultHeaders, web, App, HttpRequest, HttpResponse, HttpServer, Responder,
+    middleware::DefaultHeaders, web, App, HttpRequest, HttpResponse, HttpServer, Responder, Error
 };
-use rand::{distributions::Alphanumeric, Rng};
-use futures::FutureExt;
+use rand::Rng;
 use redis::Commands;
 extern crate qstring;
 
 use kactus::parse_protobuf_message;
 use qstring::QString;
-
 use std::time::Instant;
-
-use protobuf::Message;
-
 use serde::Serialize;
 
 #[derive(Serialize)]
-pub struct feedtimes {
+pub struct FeedTimes {
     feed: String,
     vehicles: Option<u64>,
     trips: Option<u64>,
@@ -190,7 +184,7 @@ async fn gtfsrttimes(_req: HttpRequest) -> impl Responder {
     let redisclient = redis::Client::open("redis://127.0.0.1:6379/").unwrap();
     let mut con = redisclient.get_connection().unwrap();
 
-    let mut vecoftimes: Vec<feedtimes> = Vec::new();
+    let mut vecoftimes: Vec<FeedTimes> = Vec::new();
 
     let startiterator = Instant::now();
 
@@ -226,7 +220,7 @@ async fn gtfsrttimes(_req: HttpRequest) -> impl Responder {
                     Err(_e) => None,
                 };
 
-                let feedtime = feedtimes {
+                let feedtime = FeedTimes {
                     feed: feed.clone(),
                     vehicles: vehicles,
                     trips: trips,
@@ -350,39 +344,39 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
     }
 }
 
-async fn gtfsrtws(req: HttpRequest) -> impl Responder {
+async fn gtfsrtws(req: HttpRequest, stream: web::Payload) -> Result<HttpResponse, Error>  {
     let redisclient = redis::Client::open("redis://127.0.0.1:6379/").unwrap();
     let mut con = redisclient.get_connection().unwrap();
     let qs = QString::from(req.query_string());
     if qs.get("feed").is_none() {
-        return HttpResponse::NotFound().insert_header(("Content-Type", "text/plain")).body("Error: No feed specified\n");
+        return Ok(HttpResponse::NotFound().insert_header(("Content-Type", "text/plain")).body("Error: No feed specified\n"));
     }
     let feed = qs.get("feed").unwrap();
     if qs.get("category").is_none() {
-        return HttpResponse::NotFound().insert_header(("Content-Type", "text/plain")).body("Error: No category specified\n");
+        return Ok(HttpResponse::NotFound().insert_header(("Content-Type", "text/plain")).body("Error: No category specified\n"));
     }
     let category = qs.get("category").unwrap();
     let doesexist = con.get::<String, u64>(format!("gtfsrttime|{}|{}", &feed, &category));
     if doesexist.is_err() {
-        return HttpResponse::InternalServerError().insert_header(("Content-Type", "text/plain")).body(format!("Error in connecting to redis\n"));
+        return Ok(HttpResponse::InternalServerError().insert_header(("Content-Type", "text/plain")).body(format!("Error in connecting to redis\n")));
     }
     let timeofcache = doesexist.unwrap();
     let data = con.get::<String, Vec<u8>>(format!("gtfsrt|{}|{}", &feed, &category));
     if data.is_err() {
         println!("Error: {:?}", data);
-        return HttpResponse::InternalServerError().insert_header(("Content-Type", "text/plain")).body(format!("Error: {:?}\n", data));
+        return Ok(HttpResponse::InternalServerError().insert_header(("Content-Type", "text/plain")).body(format!("Error: {:?}\n", data)));
     }
     let data = data.unwrap();
     let suicidebutton = qs.get("suicidebutton");
     if suicidebutton.is_some() {
         let suicidebutton = suicidebutton.unwrap();
         if suicidebutton == "true" {
-            return HttpResponse::Ok()
+            return Ok(HttpResponse::Ok()
                 .insert_header((
                     "Content-Type",
                     "application/x-google-protobuf",
                 ))
-                .body(data);
+                .body(data));
         }
     }
     let timeofclientcache = qs.get("timeofcache");
@@ -400,7 +394,7 @@ async fn gtfsrtws(req: HttpRequest) -> impl Responder {
         let timeofclientcache = (*timeofclientcache).parse::<u64>();
         if timeofclientcache.is_ok() {
             let timeofclientcache = timeofclientcache.unwrap();
-            if timeofclientcache >= timeofcache {return HttpResponse::NoContent().body("");}
+            if timeofclientcache >= timeofcache {return Ok(HttpResponse::NoContent().body(""));}
             match &proto {
                 Ok(proto) => {
                     let headertimestamp = proto.header.timestamp;
@@ -408,7 +402,7 @@ async fn gtfsrtws(req: HttpRequest) -> impl Responder {
                         if timeofclientcache
                             >= headertimestamp.unwrap()
                         {
-                            return HttpResponse::NoContent().body("");
+                            return Ok(HttpResponse::NoContent().body(""));
                         }
                     }
                 }
@@ -422,8 +416,8 @@ async fn gtfsrtws(req: HttpRequest) -> impl Responder {
                         }
                     }
                     if allowcrash {
-                        return HttpResponse::InternalServerError()
-                            .body("protobuf failed to parse");
+                        return Ok(HttpResponse::InternalServerError()
+                            .body("protobuf failed to parse"));
                     }
                 }
             }
@@ -436,24 +430,23 @@ async fn gtfsrtws(req: HttpRequest) -> impl Responder {
                 if clienthash.is_ok() {
                     let clienthash = clienthash.unwrap();
                     if clienthash == hashofresult {
-                        return HttpResponse::NoContent().body("");
+                        return Ok(HttpResponse::NoContent().body(""));
                     }
                 }
             }
         }
     }
-    HttpResponse::Ok()
+    Ok(HttpResponse::Ok()
         .insert_header((
             "Content-Type",
             "application/x-google-protobuf",
         ))
         .insert_header(("hash", hashofresult))
-        .body(data)
+        .body(data))
 }
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    // Create a new HTTP server.
     let builder = HttpServer::new(|| {
         App::new()
             .wrap(
