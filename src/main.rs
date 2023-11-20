@@ -74,144 +74,114 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
 
     let query_str = req.query_string(); // "name=ferret"
     let qs = QString::from(query_str);
-    let feed = qs.get("feed");
-
-    match feed {
-        Some(feed) => {
-            let category = qs.get("category");
-            //HttpResponse::Ok().body(format!("Requested {}/{}", feed, category))
-            match category {
-                Some(category) => {
-                    let doesexist =
-                        con.get::<String, u64>(format!("gtfsrttime|{}|{}", &feed, &category));
-                    match doesexist {
-                        Ok(timeofcache) => {
-                            let data = con
-                                .get::<String, Vec<u8>>(format!("gtfsrt|{}|{}", &feed, &category));
-                            match data {
-                                Ok(data) => {
-                                    let suicidebutton = qs.get("suicidebutton");
-
-                                    if suicidebutton.is_some() {
-                                        let suicidebutton = suicidebutton.unwrap();
-                                        if suicidebutton == "true" {
-                                            return HttpResponse::Ok()
-                                                .insert_header((
-                                                    "Content-Type",
-                                                    "application/x-google-protobuf",
-                                                ))
-                                                .body(data);
+    let feed = match qs.get("feed") {
+        Some(feed) => feed,
+        None => return HttpResponse::NotFound().insert_header(("Content-Type", "text/plain")).body("Error: No feed specified\n"),
+    };
+    let category = match qs.get("category") {
+        Some(category) => category,
+        None => return HttpResponse::NotFound().insert_header(("Content-Type", "text/plain")).body("Error: No category specified\n"),
+    };
+    let doesexist = con.get::<String, u64>(format!("gtfsrttime|{}|{}", feed, category));
+    if doesexist.is_err() {return HttpResponse::InternalServerError().insert_header(("Content-Type", "text/plain")).body(format!("Error in connecting to redis\n"))}
+    match doesexist {
+        Ok(timeofcache) => {
+            let data = con
+                .get::<String, Vec<u8>>(format!("gtfsrt|{}|{}", &feed, &category));
+            match data {
+                Ok(data) => {
+                    let suicidebutton = qs.get("suicidebutton");
+                    if suicidebutton.is_some() {
+                        let suicidebutton = suicidebutton.unwrap();
+                        if suicidebutton == "true" {
+                            return HttpResponse::Ok()
+                                .insert_header((
+                                    "Content-Type",
+                                    "application/x-google-protobuf",
+                                ))
+                                .body(data);
+                        }
+                    }
+                    let timeofclientcache = qs.get("timeofcache");
+                    let proto = parse_protobuf_message(&data);
+                    let hashofresult = match proto {
+                            Ok(_) => fasthash::metro::hash64(
+                            data.as_slice(),
+                        ),
+                            Err(_) => {let mut rng = rand::thread_rng();
+                                rng.gen::<u64>()
+                        }
+                    };
+                    if timeofclientcache.is_some() {
+                        let timeofclientcache = timeofclientcache.unwrap();
+                        let timeofclientcache = (*timeofclientcache).parse::<u64>();
+                        if timeofclientcache.is_ok() {
+                            let timeofclientcache = timeofclientcache.unwrap();
+                            if timeofclientcache >= timeofcache {
+                                return HttpResponse::NoContent().body("");
+                            }
+                            match &proto {
+                                Ok(proto) => {
+                                    let headertimestamp = proto.header.timestamp;
+                                    if headertimestamp.is_some() {
+                                        if timeofclientcache
+                                            >= headertimestamp.unwrap()
+                                        {
+                                            return HttpResponse::NoContent()
+                                                .body("");
                                         }
                                     }
-
-                                    let timeofclientcache = qs.get("timeofcache");
-
-                                    let proto = parse_protobuf_message(&data);
-
-                                    let hashofresult = match proto {
-                                        Ok(_) => fasthash::metro::hash64(
-                                        data.as_slice(),
-                                    ),
-                                        Err(_) => {let mut rng = rand::thread_rng();
-
-                                            rng.gen::<u64>()
-                                    }
-                                };
-
-                                    if timeofclientcache.is_some() {
-                                        let timeofclientcache = timeofclientcache.unwrap();
-
-                                        let timeofclientcache = (*timeofclientcache).parse::<u64>();
-
-                                        if timeofclientcache.is_ok() {
-                                            let timeofclientcache = timeofclientcache.unwrap();
-
-                                            if timeofclientcache >= timeofcache {
-                                                return HttpResponse::NoContent().body("");
-                                            }
-                                            match &proto {
-                                                Ok(proto) => {
-                                                    let headertimestamp = proto.header.timestamp;
-
-                                                    if headertimestamp.is_some() {
-                                                        if timeofclientcache
-                                                            >= headertimestamp.unwrap()
-                                                        {
-                                                            return HttpResponse::NoContent()
-                                                                .body("");
-                                                        }
-                                                    }
-                                                }
-                                                Err(bruh) => {
-                                                    println!("{:#?}", bruh);
-
-                                                    let skipfailure = qs.get("skipfailure");
-
-                                                    let mut allowcrash = true;
-
-                                                    if skipfailure.is_some() {
-                                                        if skipfailure.unwrap() == "true" {
-                                                            allowcrash = false;
-                                                        }
-                                                    }
-
-                                                    if allowcrash {
-                                                        return HttpResponse::InternalServerError()
-                                                            .body("protobuf failed to parse");
-                                                    }
-                                                }
-                                            }
-                                        }
-
-                                        let hashofbodyclient = qs.get("bodyhash");
-                                        if hashofbodyclient.is_some() {
-                                            let hashofbodyclient = hashofbodyclient.unwrap();
-                                            if (&proto).is_ok() {
-                                                let clienthash = hashofbodyclient.parse::<u64>();
-                                                if clienthash.is_ok() {
-                                                    let clienthash = clienthash.unwrap();
-                                                    if clienthash == hashofresult {
-                                                        return HttpResponse::NoContent().body("");
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    HttpResponse::Ok()
-                                        .insert_header((
-                                            "Content-Type",
-                                            "application/x-google-protobuf",
-                                        ))
-                                        .insert_header(("hash", hashofresult))
-                                        .body(data)
                                 }
-                                Err(e) => {
-                                    println!("Error: {:?}", e);
-                                    HttpResponse::InternalServerError()
-                                        .insert_header(("Content-Type", "text/plain"))
-                                        .body(format!("Error: {}\n", e))
+                                Err(bruh) => {
+                                    println!("{:#?}", bruh);
+                                    let skipfailure = qs.get("skipfailure");
+                                    let mut allowcrash = true;
+                                    if skipfailure.is_some() {
+                                        if skipfailure.unwrap() == "true" {
+                                            allowcrash = false;
+                                        }
+                                    }
+                                    if allowcrash {
+                                        return HttpResponse::InternalServerError()
+                                            .body("protobuf failed to parse");
+                                    }
                                 }
                             }
                         }
-                        Err(_e) => {
-                            return HttpResponse::InternalServerError()
-                                .insert_header(("Content-Type", "text/plain"))
-                                .body(format!("Error in connecting to redis\n"));
+                        let hashofbodyclient = qs.get("bodyhash");
+                        if hashofbodyclient.is_some() {
+                            let hashofbodyclient = hashofbodyclient.unwrap();
+                            if (&proto).is_ok() {
+                                let clienthash = hashofbodyclient.parse::<u64>();
+                                if clienthash.is_ok() {
+                                    let clienthash = clienthash.unwrap();
+                                    if clienthash == hashofresult {
+                                        return HttpResponse::NoContent().body("");
+                                    }
+                                }
+                            }
                         }
                     }
+                    HttpResponse::Ok()
+                        .insert_header((
+                            "Content-Type",
+                            "application/x-google-protobuf",
+                        ))
+                        .insert_header(("hash", hashofresult))
+                        .body(data)
                 }
-                None => {
-                    return HttpResponse::NotFound()
+                Err(e) => {
+                    println!("Error: {:?}", e);
+                    HttpResponse::InternalServerError()
                         .insert_header(("Content-Type", "text/plain"))
-                        .body("Error: No category specified\n")
+                        .body(format!("Error: {}\n", e))
                 }
             }
         }
-        None => {
-            return HttpResponse::NotFound()
+        Err(_e) => {
+            return HttpResponse::InternalServerError()
                 .insert_header(("Content-Type", "text/plain"))
-                .body("Error: No feed specified\n")
+                .body(format!("Error in connecting to redis\n"));
         }
     }
 }
