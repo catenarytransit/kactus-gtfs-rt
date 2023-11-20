@@ -48,8 +48,6 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for GtfsWs {
     }
 }
 
-
-
 #[derive(Serialize)]
 pub struct FeedTimes {
     feed: String,
