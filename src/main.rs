@@ -15,10 +15,8 @@ use serde::Serialize;
 pub struct GtfsWs {
     feed: String,
     category: String,
-    hashofbodyclient: Option<String>,
     suicidebutton: bool,
-    skipfailure: Option<String>,
-    timeofclientcache: Option<String>,
+    //skipfailure: Option<String>,
 }
 
 impl Actor for GtfsWs {
@@ -33,7 +31,6 @@ impl Actor for GtfsWs {
             ctx.text(format!("Error in connecting to redis\n"));
             return ctx.close(None);
         }
-        let timeofcache = doesexist.unwrap();
         let data = con.get::<String, Vec<u8>>(format!("gtfsrt|{}|{}", &feed, &category));
         if data.is_err() {
             println!("Error: {:?}", data);
@@ -42,62 +39,6 @@ impl Actor for GtfsWs {
         }
         let data = data.unwrap();
         if self.suicidebutton { return ctx.binary(data)}
-        let proto = parse_protobuf_message(&data);
-        let hashofresult = match proto {
-                Ok(_) => fasthash::metro::hash64(
-                data.as_slice(),
-            ),
-                Err(_) => {let mut rng = rand::thread_rng();
-                    rng.gen::<u64>()
-            }
-        };
-        let timeofclientcache = &self.timeofclientcache;
-        if timeofclientcache.is_some() {
-            let timeofclientcache = timeofclientcache.clone().unwrap();
-            let timeofclientcache = (*timeofclientcache).parse::<u64>();
-            if timeofclientcache.is_ok() {
-                let timeofclientcache = timeofclientcache.unwrap();
-                if timeofclientcache >= timeofcache {return ctx.text("")}
-                match &proto {
-                    Ok(proto) => {
-                        let headertimestamp = proto.header.timestamp;
-                        if headertimestamp.is_some() {
-                            if timeofclientcache
-                                >= headertimestamp.unwrap()
-                            {
-                                return ctx.text("")
-                            }
-                        }
-                    }
-                    Err(bruh) => {
-                        println!("{:#?}", bruh);
-                        let skipfailure = &self.skipfailure;
-                        let mut allowcrash = true;
-                        if skipfailure.is_some() {
-                            if skipfailure.clone().unwrap() == "true" {
-                                allowcrash = false;
-                            }
-                        }
-                        if allowcrash {
-                            ctx.text("protobuf failed to parse");
-                            return ctx.close(None);
-                        }
-                    }
-                }
-            }
-            let hashofbodyclient = &self.hashofbodyclient;
-            if hashofbodyclient.is_some() {
-                let hashofbodyclient = hashofbodyclient.clone().unwrap();
-                if (&proto).is_ok() {
-                    let clienthash = hashofbodyclient.parse::<u64>();
-                    if clienthash.is_ok() {
-                        if clienthash.unwrap() == hashofresult {
-                            return ctx.text("")
-                        }
-                    }
-                }
-            }
-        }
         ctx.binary(data)
     }
 }
@@ -138,9 +79,7 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
     match feed {
         Some(feed) => {
             let category = qs.get("category");
-
             //HttpResponse::Ok().body(format!("Requested {}/{}", feed, category))
-
             match category {
                 Some(category) => {
                     let doesexist =
@@ -149,14 +88,12 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
                         Ok(timeofcache) => {
                             let data = con
                                 .get::<String, Vec<u8>>(format!("gtfsrt|{}|{}", &feed, &category));
-
                             match data {
                                 Ok(data) => {
                                     let suicidebutton = qs.get("suicidebutton");
 
                                     if suicidebutton.is_some() {
                                         let suicidebutton = suicidebutton.unwrap();
-
                                         if suicidebutton == "true" {
                                             return HttpResponse::Ok()
                                                 .insert_header((
@@ -351,9 +288,7 @@ async fn gtfsrttimes(_req: HttpRequest) -> impl Responder {
 async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
     let redisclient = redis::Client::open("redis://127.0.0.1:6379/").unwrap();
     let mut con = redisclient.get_connection().unwrap();
-
-    let query_str = req.query_string(); // "name=ferret"
-    let qs = QString::from(query_str);
+    let qs = QString::from(req.query_string());
     let feed = match qs.get("feed") {
         Some(feed) => feed.to_string(),
         None => return HttpResponse::NotFound().insert_header(("Content-Type", "text/plain")).body("Error: No feed specified\n"),
@@ -373,46 +308,27 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
         None => true,
     };
     let doesexist = con.get::<String, u64>(format!("gtfsrttime|{}|{}", feed, category));
-    match doesexist {
-        Ok(_timeofcache) => {
-            let data =
-                con.get::<String, Vec<u8>>(format!("gtfsrt|{}|{}", feed, category));
-            match data {
-                Ok(data) => {
-                    let proto = parse_protobuf_message(&data);
-                    match proto {
-                        Ok(proto) => {
-                            if usejson {
-                                let protojson =
-                                    serde_json::to_string(&proto).unwrap();
-                                HttpResponse::Ok()
-                                    .insert_header((
-                                        "Content-Type",
-                                        "application/json",
-                                    ))
-                                    .body(protojson)
-                            } else {
-                                let protojson = format!("{:#?}", proto);
-                                HttpResponse::Ok().body(protojson)
-                            }
-                        }
-                        Err(proto) => {
-                            println!("Error parsing protobuf");
-                            println!("{:#?}", proto);
-                            HttpResponse::InternalServerError().body(format!("{:#?}", proto))
-                        }
-                    }
-                }
-                Err(e) => HttpResponse::InternalServerError()
-                    .insert_header(("Content-Type", "text/plain"))
-                    .body(format!("Error: {}\n", e)),
-            }
-        }
-        Err(_e) => {
-            return HttpResponse::InternalServerError()
-                .insert_header(("Content-Type", "text/plain"))
-                .body(format!("Error in connecting to redis\n"))
-        }
+    if doesexist.is_err() {return HttpResponse::InternalServerError().insert_header(("Content-Type", "text/plain")).body(format!("Error in connecting to redis\n"))}
+    let data = con.get::<String, Vec<u8>>(format!("gtfsrt|{}|{}", feed, category));
+    if data.is_err() {return HttpResponse::InternalServerError().insert_header(("Content-Type", "text/plain")).body(format!("Error: {:?}\n", data.unwrap()));}
+    let proto = parse_protobuf_message(&data.unwrap());
+    if proto.is_err() {
+        println!("Error parsing protobuf");
+        println!("{:#?}", proto);
+        return HttpResponse::InternalServerError().body(format!("{:#?}", proto));
+    }
+    if usejson {
+        let protojson =
+            serde_json::to_string(&proto.unwrap()).unwrap();
+        HttpResponse::Ok()
+            .insert_header((
+                "Content-Type",
+                "application/json",
+            ))
+            .body(protojson)
+    } else {
+        let protojson = format!("{:#?}", proto.unwrap());
+        HttpResponse::Ok().body(protojson)
     }
 }
 
@@ -430,19 +346,7 @@ async fn gtfsrtws(req: HttpRequest, stream: web::Payload) -> Result<HttpResponse
         Some(_) => true,
         None => false,
     };
-    let timeofclientcache = match qs.get("timeofcache") {
-        Some(timeofcache) => Some(timeofcache.to_string()),
-        None => None,
-    };
-    let hashofbodyclient = match qs.get("bodyhash") {
-        Some(hashofbodyclient) => Some(hashofbodyclient.to_string()),
-        None => None,
-    };
-    let skipfailure = match qs.get("skipfailure") {
-        Some(skipfailure) => Some(skipfailure.to_string()),
-        None => None,
-    };
-    let resp = ws::start(GtfsWs {feed, category, suicidebutton, skipfailure, timeofclientcache, hashofbodyclient}, &req, stream);
+    let resp = ws::start(GtfsWs {feed, category, suicidebutton}, &req, stream);
     println!("{:?}", resp);
     resp
 }
