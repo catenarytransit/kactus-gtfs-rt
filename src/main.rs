@@ -5,7 +5,6 @@ use actix_web::{
 use futures::FutureExt;
 use rand::{distributions::Alphanumeric, Rng};
 use actix_web_actors::ws;
-use rand::Rng;
 use redis::Commands;
 extern crate qstring;
 
