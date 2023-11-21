@@ -12,10 +12,10 @@ use crate::rand::prelude::SliceRandom;
 use kactus::insert::insert_gtfs_rt_bytes;
 extern crate csv;
 use futures::future::join_all;
+use kactus::aspen;
 use std::error::Error;
 use std::fs::File;
 use std::io::BufReader;
-use kactus::aspen;
 //stores the config for each agency
 #[derive(Debug, Clone)]
 struct AgencyInfo {

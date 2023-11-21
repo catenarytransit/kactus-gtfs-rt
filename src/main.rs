@@ -2,8 +2,8 @@ use actix_web::dev::Service;
 use actix_web::{
     middleware::DefaultHeaders, web, App, HttpRequest, HttpResponse, HttpServer, Responder,
 };
-use rand::{distributions::Alphanumeric, Rng};
 use futures::FutureExt;
+use rand::{distributions::Alphanumeric, Rng};
 use redis::Commands;
 extern crate qstring;
 
@@ -80,14 +80,13 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
                                     let proto = parse_protobuf_message(&data);
 
                                     let hashofresult = match proto {
-                                        Ok(_) => fasthash::metro::hash64(
-                                        data.as_slice(),
-                                    ),
-                                        Err(_) => {let mut rng = rand::thread_rng();
+                                        Ok(_) => fasthash::metro::hash64(data.as_slice()),
+                                        Err(_) => {
+                                            let mut rng = rand::thread_rng();
 
                                             rng.gen::<u64>()
-                                    }
-                                };
+                                        }
+                                    };
 
                                     if timeofclientcache.is_some() {
                                         let timeofclientcache = timeofclientcache.unwrap();

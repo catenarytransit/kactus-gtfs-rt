@@ -245,8 +245,8 @@ fn convert(
                             }
                             None => None,
                         }
-                    },
-                    _ => panic!("Not MNR or LIRR")
+                    }
+                    _ => panic!("Not MNR or LIRR"),
                 },
                 position: Some(gtfs_rt::Position {
                     latitude: mta.location.latitude,
@@ -403,7 +403,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             true,
             false,
             true,
-        ).await;
+        )
+        .await;
 
         insert_gtfs_rt_bytes(
             &mut con,
@@ -421,7 +422,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             true,
             false,
             true,
-        ).await;
+        )
+        .await;
 
         //println!("{:?}", import_data);
 

@@ -6,16 +6,14 @@ use redis::Client as RedisClient;
 use kactus::insert::insert_gtfs_rt;
 use kactus::insert::insert_gtfs_rt_bytes;
 
-
 use kactus::aspen::send_to_aspen;
 
-
 #[tokio::main]
-async fn main() {    
-let redisclient = RedisClient::open("redis://127.0.0.1:6379/").unwrap();
-let mut con = redisclient.get_connection().unwrap();
+async fn main() {
+    let redisclient = RedisClient::open("redis://127.0.0.1:6379/").unwrap();
+    let mut con = redisclient.get_connection().unwrap();
 
-let client = reqwest::Client::new();
+    let client = reqwest::Client::new();
     loop {
         let amtrak_raw_data = amtrak_gtfs_rt::fetch_amtrak_gtfs_rt(&client).await.unwrap();
 
@@ -37,7 +35,8 @@ let client = reqwest::Client::new();
             false,
             false,
             false,
-        ).await;
+        )
+        .await;
 
         std::thread::sleep(std::time::Duration::from_millis(500));
     }

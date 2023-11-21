@@ -1,15 +1,15 @@
-use redis::Commands;
-use reqwest::Client as ReqwestClient;
-use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
-use termion::{color, style};
-use prost::Message;
 use chrono::prelude::*;
 use chrono_tz::US::Pacific;
 use gtfs_rt::FeedMessage;
 use kactus::insert::insert_gtfs_rt_bytes;
-use regex::Regex;
 use kactus::parse_protobuf_message;
+use prost::Message;
+use redis::Commands;
+use regex::Regex;
+use reqwest::Client as ReqwestClient;
 use std::fs;
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use termion::{color, style};
 
 use kactus::aspen::send_to_aspen;
 
@@ -69,17 +69,19 @@ async fn main() {
             let mut alerts_con = redisclient.get_connection().unwrap();
 
             if metrolink_results.2.is_some() {
-                println!("Alerts {} bytes", metrolink_results.2.as_ref().unwrap().len());
-            insert_gtfs_rt_bytes(
-                &mut alerts_con,
-                &metrolink_results.2.as_ref().unwrap(),
-                &"f-metrolinktrains~rt",
-                &("alerts".to_string()),
-            );
+                println!(
+                    "Alerts {} bytes",
+                    metrolink_results.2.as_ref().unwrap().len()
+                );
+                insert_gtfs_rt_bytes(
+                    &mut alerts_con,
+                    &metrolink_results.2.as_ref().unwrap(),
+                    &"f-metrolinktrains~rt",
+                    &("alerts".to_string()),
+                );
             } else {
                 println!("Alerts crashed, skipping");
             }
-
 
             send_to_aspen(
                 "f-metrolinktrains~rt",
@@ -122,20 +124,20 @@ async fn main() {
 }
 #[derive(serde::Deserialize, Debug, Clone)]
 struct MetrolinkAlertsResults {
-    #[serde(rename="ServiceLines")]
+    #[serde(rename = "ServiceLines")]
     service_lines: Vec<String>,
-    #[serde(rename="Advisories")]
-    advisories: Vec<MetrolinkAlertsAdvisories>
+    #[serde(rename = "Advisories")]
+    advisories: Vec<MetrolinkAlertsAdvisories>,
 }
 
 #[derive(serde::Deserialize, Debug, Clone)]
 struct MetrolinkAlertsAdvisories {
-    #[serde(rename="Line")]
+    #[serde(rename = "Line")]
     line: String,
-    #[serde(rename="LineAbbreviation")]
+    #[serde(rename = "LineAbbreviation")]
     line_abbreviation: String,
-    #[serde(rename="ServiceAdvisories")]
-    service_advisories: Vec<MetrolinkAlertsServiceAdvisories>
+    #[serde(rename = "ServiceAdvisories")]
+    service_advisories: Vec<MetrolinkAlertsServiceAdvisories>,
 }
 
 #[derive(serde::Deserialize, Debug, Clone)]
@@ -157,7 +159,7 @@ struct MetrolinkAlertsServiceAdvisories {
     alert_type: String,
     details_page: String,
     alert_details_page: Option<String>,
-    date_range_output: String
+    date_range_output: String,
 }
 
 #[derive(serde::Deserialize, Debug, Clone)]
@@ -166,10 +168,10 @@ struct MetrolinkAlertsRaw {
     results: MetrolinkAlertsResults,
     time_limit: i32,
     minified: bool,
-    is_homepage: bool
+    is_homepage: bool,
 }
 
-fn metrolink_alert_line_abbrv_to_route_id(x:&str) -> &str {
+fn metrolink_alert_line_abbrv_to_route_id(x: &str) -> &str {
     match x {
         "AV" => "Antelope Valley Line",
         "IEOC" => "Inland Emp.-Orange Co. Line",
@@ -178,7 +180,7 @@ fn metrolink_alert_line_abbrv_to_route_id(x:&str) -> &str {
         "VC" => "Ventura County Line",
         "RIV" => "Riverside Line",
         "91/PV" => "91 Line",
-        _ => ""
+        _ => "",
     }
 }
 
@@ -196,7 +198,7 @@ async fn get_metrolink_alerts(client: &ReqwestClient) -> Option<Vec<u8>> {
 
             let alertsscript = re.captures(text.as_str()).unwrap().get(0).unwrap().as_str();
             let alertsscript = Regex::new("<script type=\\\"text/javascript\\\">\\s+window.ml = window.ml\\s+\\|\\|\\s+\\{\\};(\\s)+window.ml =").unwrap().replace(&alertsscript,"");
-            let alertsscript = Regex::new("</script>").unwrap().replace(&alertsscript,"");
+            let alertsscript = Regex::new("</script>").unwrap().replace(&alertsscript, "");
 
             let alertsscript = alertsscript.trim().replace("results", "\"results\"");
             let alertsscript = alertsscript.replace("timeLimit", "\"timeLimit\"");
@@ -217,79 +219,91 @@ async fn get_metrolink_alerts(client: &ReqwestClient) -> Option<Vec<u8>> {
                 Ok(alerts) => {
                     //println!("Alerts: {:#?}", alerts);
 
-                    let alerts_list = alerts.results.advisories.iter().map(|a| a.service_advisories.clone()).flatten().collect::<Vec<MetrolinkAlertsServiceAdvisories>>();
+                    let alerts_list = alerts
+                        .results
+                        .advisories
+                        .iter()
+                        .map(|a| a.service_advisories.clone())
+                        .flatten()
+                        .collect::<Vec<MetrolinkAlertsServiceAdvisories>>();
 
+                    let alerts_gtfs_list = alerts_list
+                        .iter()
+                        .map(|x| {
+                            let mut metrolink_link = String::from("https://metrolinktrains.com");
 
-                    let alerts_gtfs_list = alerts_list.iter().map(|x| {
-                        
-                    let mut metrolink_link = String::from("https://metrolinktrains.com");
+                            metrolink_link.push_str((x.details_page).as_str());
 
-                    metrolink_link.push_str((x.details_page).as_str());
-
-                    let url_alert = match x.alert_details_page {
-                        Some(_) => {
-                            Some(gtfs_rt::TranslatedString {
-                                translation: vec![gtfs_rt::translated_string::Translation {
-                                    text: metrolink_link,
-                                    language: Some("en".to_string())
-                                }]
-                            })
-                        }
-                        None => None
-                    };
-
-                        gtfs_rt::FeedEntity {
-                            id: x.id.to_string(),
-                            is_deleted: Some(false),
-                            trip_update: None,
-                            vehicle: None,
-                            alert: Some(gtfs_rt::Alert {
-                                tts_description_text: None,
-                                tts_header_text: None,
-                                cause: None,
-                                effect: None,
-                                header_text: Some(gtfs_rt::TranslatedString {
+                            let url_alert = match x.alert_details_page {
+                                Some(_) => Some(gtfs_rt::TranslatedString {
                                     translation: vec![gtfs_rt::translated_string::Translation {
-                                        text: x.message.clone(),
-                                        language: Some("en".to_string())
-                                    }]
+                                        text: metrolink_link,
+                                        language: Some("en".to_string()),
+                                    }],
                                 }),
-                                description_text: None,
-                                informed_entity: vec![gtfs_rt::EntitySelector {
-                                    agency_id: None,
-                                    route_id: Some(metrolink_alert_line_abbrv_to_route_id(&x.line).to_string()),
-                                    direction_id: None,
-                                    route_type: None,
-                                    trip: None,
-                                    stop_id: None
-                                }],
-                                active_period: vec![gtfs_rt::TimeRange {
-                                    start: None,
-                                    end: None
-                                }],
-                                cause_detail: None,
-                                effect_detail: None,
-                                image: None,
-                                image_alternative_text: None,
-                                severity_level: None,
-                                url: url_alert
+                                None => None,
+                            };
+
+                            gtfs_rt::FeedEntity {
+                                id: x.id.to_string(),
+                                is_deleted: Some(false),
+                                trip_update: None,
+                                vehicle: None,
+                                alert: Some(gtfs_rt::Alert {
+                                    tts_description_text: None,
+                                    tts_header_text: None,
+                                    cause: None,
+                                    effect: None,
+                                    header_text: Some(gtfs_rt::TranslatedString {
+                                        translation: vec![
+                                            gtfs_rt::translated_string::Translation {
+                                                text: x.message.clone(),
+                                                language: Some("en".to_string()),
+                                            },
+                                        ],
+                                    }),
+                                    description_text: None,
+                                    informed_entity: vec![gtfs_rt::EntitySelector {
+                                        agency_id: None,
+                                        route_id: Some(
+                                            metrolink_alert_line_abbrv_to_route_id(&x.line)
+                                                .to_string(),
+                                        ),
+                                        direction_id: None,
+                                        route_type: None,
+                                        trip: None,
+                                        stop_id: None,
+                                    }],
+                                    active_period: vec![gtfs_rt::TimeRange {
+                                        start: None,
+                                        end: None,
+                                    }],
+                                    cause_detail: None,
+                                    effect_detail: None,
+                                    image: None,
+                                    image_alternative_text: None,
+                                    severity_level: None,
+                                    url: url_alert,
                                 }),
-                            shape: None
-                        }
-                    }).collect::<Vec<gtfs_rt::FeedEntity>>();
+                                shape: None,
+                            }
+                        })
+                        .collect::<Vec<gtfs_rt::FeedEntity>>();
 
                     let feed_message = FeedMessage {
                         header: gtfs_rt::FeedHeader {
                             gtfs_realtime_version: "2.0".to_string(),
-                            incrementality: Some(gtfs_rt::feed_header::Incrementality::FullDataset as i32),
+                            incrementality: Some(
+                                gtfs_rt::feed_header::Incrementality::FullDataset as i32,
+                            ),
                             timestamp: Some(get_epoch_ms() as u64),
                         },
-                        entity: alerts_gtfs_list
+                        entity: alerts_gtfs_list,
                     };
 
                     println!("Alerts: {:#?}", feed_message);
 
-                    let bytes:Vec<u8> = feed_message.encode_to_vec();
+                    let bytes: Vec<u8> = feed_message.encode_to_vec();
 
                     Some(bytes)
                 }
@@ -302,7 +316,7 @@ async fn get_metrolink_alerts(client: &ReqwestClient) -> Option<Vec<u8>> {
         Err(error) => {
             println!("Error getting alerts: {:?}", error);
             None
-        },
+        }
     }
 }
 
