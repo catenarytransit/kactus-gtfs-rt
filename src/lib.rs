@@ -16,8 +16,8 @@ pub fn parse_protobuf_message(
 pub mod insert {
 
     use prost::Message;
-    use redis::{Commands, Connection, RedisResult};
-    use std::time::{Duration, SystemTime, UNIX_EPOCH};
+    use redis::{Commands, Connection};
+    use std::time::{SystemTime, UNIX_EPOCH};
 
     pub fn insert_gtfs_rt_bytes(
         con: &mut Connection,
