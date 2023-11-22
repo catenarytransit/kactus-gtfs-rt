@@ -33,5 +33,5 @@ jobs:
 
       - name: SSH
         run: |
-          ssh runner@sshtransit03.catenarymaps.org "echo '${{ secrets.SUDO_PASSWD }}' | sudo -S bash -c 'chown -R lolpro11 /opt/kactus-gtfs-rt; rm /opt/kactus-gtfs-rt/Cargo.lock'; echo '${{ secrets.SUDO_PASSWD }}' | sudo -S -u lolpro11 bash -c 'cd /opt/kactus-gtfs-rt; git pull; cargo build --release'; echo '${{ secrets.SUDO_PASSWD }}' | sudo -S systemctl restart kactusingest.service kactuslacmta.service kactusmetrolink.service kactusmtarail.service kactuspublic.service kactusserver.service zotgtfsrt.service kactusdoublemap.service kactusamtrak.service"
+          ssh runner@sshtransit03.catenarymaps.org "echo '${{ secrets.SUDO_PASSWD }}' | sudo -S bash -c 'chown -R lolpro11 /opt/kactus-gtfs-rt; rm /opt/kactus-gtfs-rt/Cargo.lock'; echo '${{ secrets.SUDO_PASSWD }}' | sudo -S -u lolpro11 bash -c 'cd /opt/kactus-gtfs-rt; git pull; cargo clean --verbose; cargo build --release --verbose'; echo '${{ secrets.SUDO_PASSWD }}' | sudo -S systemctl restart kactusingest.service kactuslacmta.service kactusmetrolink.service kactusmtarail.service kactuspublic.service kactusserver.service zotgtfsrt.service kactusdoublemap.service kactusamtrak.service"
         shell: bash
