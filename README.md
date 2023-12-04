@@ -55,7 +55,7 @@ cargo run --bin ingestv2
 ```bash
 sudo cp systemd* /etc/systemd/system/
 sudo systemctl daemon-reload
-sudo systemctl enable --now kactua* zotgtfsrt.service
+sudo systemctl enable --now kactus* zotgtfsrt.service
 ```
 
 ### urls.csv config
