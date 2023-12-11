@@ -45,6 +45,7 @@ snailquote = "0.3.1"
 systemctl = "0.3.1"
 termion = "2.0.3"
 tokio = { version = "1.33", features = ["full"] }
+gtfs-structures = "0.38.0"
 
 
 [lib]
