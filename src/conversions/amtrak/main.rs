@@ -14,6 +14,9 @@ use gtfs_structures::Gtfs;
 async fn main() {
     let redisclient = RedisClient::open("redis://127.0.0.1:6379/").unwrap();
     let mut con = redisclient.get_connection().unwrap();
+    let gtfs = Gtfs::from_url_async("https://content.amtrak.com/content/gtfs/GTFS.zip")
+    .await
+    .unwrap();
 
     let gtfs = Gtfs::from_url_async("https://content.amtrak.com/content/gtfs/GTFS.zip")
     .await
