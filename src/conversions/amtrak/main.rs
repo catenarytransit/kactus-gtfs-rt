@@ -36,6 +36,13 @@ async fn main() {
             &"vehicles".to_string(),
         );
 
+        insert_gtfs_rt_bytes(
+            &mut con,
+            &trip_data,
+            &"f-amtrak~rt".to_string(),
+            &"trips".to_string(),
+        );
+
         send_to_aspen(
             "f-amtrak~rt",
             &Some(vehicle_data),
