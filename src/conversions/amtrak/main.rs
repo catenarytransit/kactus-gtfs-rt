@@ -27,6 +27,7 @@ async fn main() {
         let amtrak_gtfs_rt = amtrak_gtfs_rt::fetch_amtrak_gtfs_rt(&gtfs, &client).await.unwrap();
 
         let vehicle_data = amtrak_gtfs_rt.vehicle_positions.encode_to_vec();
+        let trip_data = amtrak_gtfs_rt.trip_updates.encode_to_vec();
 
         insert_gtfs_rt_bytes(
             &mut con,
@@ -35,13 +36,20 @@ async fn main() {
             &"vehicles".to_string(),
         );
 
+        insert_gtfs_rt_bytes(
+            &mut con,
+            &trip_data,
+            &"f-amtrak~rt".to_string(),
+            &"trips".to_string(),
+        );
+
         send_to_aspen(
             "f-amtrak~rt",
             &Some(vehicle_data),
-            &None,
+            &Some(trip_data),
             &None,
             true,
-            false,
+            true,
             false,
             false,
         )

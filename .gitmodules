@@ -1,3 +1,3 @@
-[submodule "gtfs-rt-feeds"]
-	path = gtfs-rt-feeds
-	url = https://github.com/lolpro11/gtfs-rt-feeds
+[submodule "transitland-atlas"]
+	url = https://github.com/CatenaryMaps/transitland-atlas
+	path = transitland-atlas
