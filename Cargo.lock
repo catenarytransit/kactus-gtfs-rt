@@ -352,7 +352,7 @@ dependencies = [
 [[package]]
 name = "amtrak-gtfs-rt"
 version = "0.1.6"
-source = "git+https://github.com/CatenaryMaps/amtrak-gtfs-rt#22d5e1616424900e732d701336c31a4c4e936864"
+source = "git+https://github.com/CatenaryMaps/amtrak-gtfs-rt#e877b963da9b0ed492b1b4eab2098e48752ebd01"
 dependencies = [
  "amtk",
  "amtrak-api",
