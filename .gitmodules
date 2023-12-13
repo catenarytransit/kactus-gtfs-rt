@@ -1,3 +1,6 @@
 [submodule "transitland-atlas"]
 	url = https://github.com/CatenaryMaps/transitland-atlas
 	path = transitland-atlas
+[submodule "gtfs-rt-feeds"]
+        url = https://github.com/CatenaryMaps/lolpro11
+        path = gtfs-rt-feeds
