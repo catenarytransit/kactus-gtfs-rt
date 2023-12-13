@@ -89,3 +89,10 @@ Then run
 ```bash
 cargo run --bin ingestmetrolink
 ```
+
+## For Contributors
+
+For unix users, running `git config core.hooksPath .githooks` is required.
+Pull requests will not be merged without this.
+
+No option exists for Windows users at the moment. Please try WSL Ubuntu for the moment. We're working on adding this.
