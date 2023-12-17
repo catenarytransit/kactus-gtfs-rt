@@ -2,16 +2,16 @@ use actix::{Actor, StreamHandler};
 use actix_web::{
     middleware::DefaultHeaders, web, App, HttpRequest, HttpResponse, HttpServer, Responder,
 };
+use actix_web_actors::ws;
 use futures::FutureExt;
 use rand::{distributions::Alphanumeric, Rng};
-use actix_web_actors::ws;
 use redis::Commands;
 extern crate qstring;
 
 use kactus::parse_protobuf_message;
 use qstring::QString;
-use std::time::Instant;
 use serde::Serialize;
+use std::time::Instant;
 
 pub struct GtfsWs {
     feed: String,
@@ -39,7 +39,9 @@ impl Actor for GtfsWs {
             return ctx.close(None);
         }
         let data = data.unwrap();
-        if self.suicidebutton { return ctx.binary(data)}
+        if self.suicidebutton {
+            return ctx.binary(data);
+        }
         ctx.binary(data)
     }
 }
@@ -74,37 +76,49 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
     let qs = QString::from(req.query_string());
     let feed = match qs.get("feed") {
         Some(feed) => feed,
-        None => return HttpResponse::NotFound().insert_header(("Content-Type", "text/plain")).body("Error: No feed specified\n"),
+        None => {
+            return HttpResponse::NotFound()
+                .insert_header(("Content-Type", "text/plain"))
+                .body("Error: No feed specified\n")
+        }
     };
     let category = match qs.get("category") {
         Some(category) => category,
-        None => return HttpResponse::NotFound().insert_header(("Content-Type", "text/plain")).body("Error: No category specified\n"),
+        None => {
+            return HttpResponse::NotFound()
+                .insert_header(("Content-Type", "text/plain"))
+                .body("Error: No category specified\n")
+        }
     };
     let doesexist = con.get::<String, u64>(format!("gtfsrttime|{}|{}", feed, category));
-    if doesexist.is_err() {return HttpResponse::InternalServerError().insert_header(("Content-Type", "text/plain")).body(format!("Error in connecting to redis\n"))}
+    if doesexist.is_err() {
+        return HttpResponse::InternalServerError()
+            .insert_header(("Content-Type", "text/plain"))
+            .body(format!("Error in connecting to redis\n"));
+    }
     let data = con.get::<String, Vec<u8>>(format!("gtfsrt|{}|{}", &feed, &category));
-    if data.is_err() {return HttpResponse::InternalServerError().insert_header(("Content-Type", "text/plain")).body(format!("Error: {:?}\n", data.unwrap()));}
+    if data.is_err() {
+        return HttpResponse::InternalServerError()
+            .insert_header(("Content-Type", "text/plain"))
+            .body(format!("Error: {:?}\n", data.unwrap()));
+    }
     let data = data.unwrap();
     let suicidebutton = qs.get("suicidebutton");
     if suicidebutton.is_some() {
         let suicidebutton = suicidebutton.unwrap();
         if suicidebutton == "true" {
             return HttpResponse::Ok()
-                .insert_header((
-                    "Content-Type",
-                    "application/x-google-protobuf",
-                ))
+                .insert_header(("Content-Type", "application/x-google-protobuf"))
                 .body(data);
         }
     }
     let timeofclientcache = qs.get("timeofcache");
     let proto = parse_protobuf_message(&data);
     let hashofresult = match proto {
-            Ok(_) => fasthash::metro::hash64(
-            data.as_slice(),
-        ),
-            Err(_) => {let mut rng = rand::thread_rng();
-                rng.gen::<u64>()
+        Ok(_) => fasthash::metro::hash64(data.as_slice()),
+        Err(_) => {
+            let mut rng = rand::thread_rng();
+            rng.gen::<u64>()
         }
     };
     if timeofclientcache.is_some() {
@@ -119,11 +133,8 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
                 Ok(proto) => {
                     let headertimestamp = proto.header.timestamp;
                     if headertimestamp.is_some() {
-                        if timeofclientcache
-                            >= headertimestamp.unwrap()
-                        {
-                            return HttpResponse::NoContent()
-                                .body("");
+                        if timeofclientcache >= headertimestamp.unwrap() {
+                            return HttpResponse::NoContent().body("");
                         }
                     }
                 }
@@ -158,13 +169,9 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
         }
     }
     HttpResponse::Ok()
-        .insert_header((
-            "Content-Type",
-            "application/x-google-protobuf",
-        ))
+        .insert_header(("Content-Type", "application/x-google-protobuf"))
         .insert_header(("hash", hashofresult))
         .body(data)
-    
 }
 
 async fn gtfsrttimes(_req: HttpRequest) -> impl Responder {
@@ -242,11 +249,19 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
     let qs = QString::from(req.query_string());
     let feed = match qs.get("feed") {
         Some(feed) => feed.to_string(),
-        None => return HttpResponse::NotFound().insert_header(("Content-Type", "text/plain")).body("Error: No feed specified\n"),
+        None => {
+            return HttpResponse::NotFound()
+                .insert_header(("Content-Type", "text/plain"))
+                .body("Error: No feed specified\n")
+        }
     };
     let category = match qs.get("category") {
         Some(category) => category.to_string(),
-        None => return HttpResponse::NotFound().insert_header(("Content-Type", "text/plain")).body("Error: No category specified\n"),
+        None => {
+            return HttpResponse::NotFound()
+                .insert_header(("Content-Type", "text/plain"))
+                .body("Error: No category specified\n")
+        }
     };
     let usejson = match qs.get("raw") {
         Some(raw) => {
@@ -259,9 +274,17 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
         None => true,
     };
     let doesexist = con.get::<String, u64>(format!("gtfsrttime|{}|{}", feed, category));
-    if doesexist.is_err() {return HttpResponse::InternalServerError().insert_header(("Content-Type", "text/plain")).body(format!("Error in connecting to redis\n"))}
+    if doesexist.is_err() {
+        return HttpResponse::InternalServerError()
+            .insert_header(("Content-Type", "text/plain"))
+            .body(format!("Error in connecting to redis\n"));
+    }
     let data = con.get::<String, Vec<u8>>(format!("gtfsrt|{}|{}", feed, category));
-    if data.is_err() {return HttpResponse::InternalServerError().insert_header(("Content-Type", "text/plain")).body(format!("Error: {:?}\n", data.unwrap()));}
+    if data.is_err() {
+        return HttpResponse::InternalServerError()
+            .insert_header(("Content-Type", "text/plain"))
+            .body(format!("Error: {:?}\n", data.unwrap()));
+    }
     let proto = parse_protobuf_message(&data.unwrap());
     if proto.is_err() {
         println!("Error parsing protobuf");
@@ -269,13 +292,9 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
         return HttpResponse::InternalServerError().body(format!("{:#?}", proto));
     }
     if usejson {
-        let protojson =
-            serde_json::to_string(&proto.unwrap()).unwrap();
+        let protojson = serde_json::to_string(&proto.unwrap()).unwrap();
         HttpResponse::Ok()
-            .insert_header((
-                "Content-Type",
-                "application/json",
-            ))
+            .insert_header(("Content-Type", "application/json"))
             .body(protojson)
     } else {
         let protojson = format!("{:#?}", proto.unwrap());
@@ -283,21 +302,40 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
     }
 }
 
-async fn gtfsrtws(req: HttpRequest, stream: web::Payload) -> Result<HttpResponse, actix_web::Error>  {
+async fn gtfsrtws(
+    req: HttpRequest,
+    stream: web::Payload,
+) -> Result<HttpResponse, actix_web::Error> {
     let qs = QString::from(req.query_string());
     let feed = match qs.get("feed") {
         Some(feed) => feed.to_string(),
-        None => return Ok(HttpResponse::NotFound().insert_header(("Content-Type", "text/plain")).body("Error: No feed specified\n")),
+        None => {
+            return Ok(HttpResponse::NotFound()
+                .insert_header(("Content-Type", "text/plain"))
+                .body("Error: No feed specified\n"))
+        }
     };
     let category = match qs.get("category") {
         Some(category) => category.to_string(),
-        None => return Ok(HttpResponse::NotFound().insert_header(("Content-Type", "text/plain")).body("Error: No category specified\n")),
+        None => {
+            return Ok(HttpResponse::NotFound()
+                .insert_header(("Content-Type", "text/plain"))
+                .body("Error: No category specified\n"))
+        }
     };
     let suicidebutton = match qs.get("suicidebutton") {
         Some(_) => true,
         None => false,
     };
-    let resp = ws::start(GtfsWs {feed, category, suicidebutton}, &req, stream);
+    let resp = ws::start(
+        GtfsWs {
+            feed,
+            category,
+            suicidebutton,
+        },
+        &req,
+        stream,
+    );
     println!("{:?}", resp);
     resp
 }

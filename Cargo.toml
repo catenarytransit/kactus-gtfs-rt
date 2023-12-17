@@ -79,3 +79,7 @@ path = "src/meerkat-manager/meerkat-fallback.rs"
 [[bin]]
 name = "ingestamtrak"
 path = "src/conversions/amtrak/amtrak.rs"
+
+[[bin]]
+name = "ingestv3"
+path = "src/ingestv3/ingest.rs"
