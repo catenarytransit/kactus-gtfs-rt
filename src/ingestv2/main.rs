@@ -93,7 +93,11 @@ async fn main() -> color_eyre::eyre::Result<()> {
     let mut lastloop;
 
     loop {
-        let client = ReqwestClient::new();
+        let client = reqwest::ClientBuilder::new()
+        .deflate(true)
+        .gzip(true)
+        .brotli(true)
+        .build().unwrap();
 
         lastloop = Instant::now();
 
