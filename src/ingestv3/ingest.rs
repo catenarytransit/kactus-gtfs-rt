@@ -22,13 +22,13 @@ struct AgencyInfo {
 #[tokio::main]
 async fn main() {
     let mut rng = rand::thread_rng();
+    let worker_uid: Arc<u64> = Arc::new(rng.gen::<u64>());
 
     let (zk, default_watcher) = ZooKeeper::connect(&"127.0.0.1:2181".parse().unwrap())
         .await
         .unwrap();
 
     let feed_list: Arc<Mutex<Vec<AgencyInfo>>> = Arc::new(Mutex::new(vec![]));
-    let worker_uid: Arc<u64> = Arc::new(rng.gen::<u64>());
 
     //wrap zk into an arc to be accessed across several threads
     let zk = Arc::new(zk);
