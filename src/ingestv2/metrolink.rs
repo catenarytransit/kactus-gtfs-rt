@@ -30,7 +30,11 @@ async fn main() {
     let arguments = std::env::args();
     let _arguments = arguments::parse(arguments).unwrap();
 
-    let client = ReqwestClient::new();
+    let client = reqwest::ClientBuilder::new()
+        .deflate(true)
+        .gzip(true)
+        .brotli(true)
+        .build().unwrap();
     let redisclient = redis::Client::open("redis://127.0.0.1:6379/").unwrap();
     let _con = redisclient.get_connection().unwrap();
 

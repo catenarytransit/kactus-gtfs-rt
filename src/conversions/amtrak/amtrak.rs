@@ -22,7 +22,11 @@ async fn main() {
         .await
         .unwrap();
 
-    let client = reqwest::Client::new();
+        let client = reqwest::ClientBuilder::new()
+        .deflate(true)
+        .gzip(true)
+        .brotli(true)
+        .build().unwrap();
     loop {
         let amtrak_gtfs_rt = amtrak_gtfs_rt::fetch_amtrak_gtfs_rt(&gtfs, &client)
             .await
