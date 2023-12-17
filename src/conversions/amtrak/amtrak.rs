@@ -18,10 +18,6 @@ async fn main() {
         .await
         .unwrap();
 
-    let gtfs = Gtfs::from_url_async("https://content.amtrak.com/content/gtfs/GTFS.zip")
-        .await
-        .unwrap();
-
         let client = reqwest::ClientBuilder::new()
         .deflate(true)
         .gzip(true)
