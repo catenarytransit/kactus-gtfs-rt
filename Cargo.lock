@@ -1648,9 +1648,9 @@ dependencies = [
 
 [[package]]
 name = "hyper"
-version = "1.0.1"
+version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "403f9214f3e703236b221f1a9cd88ec8b4adfa5296de01ab96216361f4692f56"
+checksum = "fb5aa53871fc917b1a9ed87b683a5d86db645e23acb32c2e0785a353e522fb75"
 dependencies = [
  "bytes 1.5.0",
  "futures-channel",
@@ -1898,8 +1898,13 @@ dependencies = [
  "fasthash",
  "futures 0.3.29",
  "gtfs-rt",
+<<<<<<< HEAD
  "gtfs-structures 0.39.0",
  "hyper 1.0.1",
+=======
+ "gtfs-structures",
+ "hyper 1.1.0",
+>>>>>>> dce63704b57a76e09c6c1c1799aa494d01c10419
  "openssl",
  "prost",
  "protobuf",
@@ -2790,9 +2795,9 @@ checksum = "c08c74e62047bb2de4ff487b251e4a92e24f48745648451635cec7d591162d9f"
 
 [[package]]
 name = "reqwest"
-version = "0.11.22"
+version = "0.11.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "046cd98826c46c2ac8ddecae268eb5c2e58628688a5fc7a2643704a73faba95b"
+checksum = "37b1ae8d9ac08420c66222fb9096fc5de435c3c48542bc5336c51892cffafb41"
 dependencies = [
  "async-compression",
  "base64 0.21.5",
