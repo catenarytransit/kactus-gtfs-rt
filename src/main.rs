@@ -1,6 +1,6 @@
 use actix::{Actor, StreamHandler};
 use actix_web::{
-    middleware::DefaultHeaders, web, App, HttpRequest, HttpResponse, HttpServer, Responder,
+    middleware::DefaultHeaders, middleware, web, App, HttpRequest, HttpResponse, HttpServer, Responder,
 };
 use actix_web_actors::ws;
 use futures::FutureExt;
@@ -354,6 +354,7 @@ async fn main() -> std::io::Result<()> {
                     )),
             )
             .wrap(actix_block_ai_crawling::BlockAi)
+            .wrap(middleware::Compress::default())
             .route("/", web::get().to(index))
             .route("/gtfsrt/", web::get().to(gtfsrt))
             .route("/gtfsrt", web::get().to(gtfsrt))

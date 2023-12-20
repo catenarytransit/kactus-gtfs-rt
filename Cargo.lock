@@ -363,7 +363,7 @@ dependencies = [
  "geojson",
  "gtfs",
  "gtfs-rt",
- "gtfs-structures",
+ "gtfs-structures 0.38.0",
  "openssl",
  "reqwest",
  "rust-crypto",
@@ -1386,6 +1386,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "gtfs-structures"
+version = "0.39.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2ccf9da424d8e292d04a1081e3c94a0ac4927a081b250a916e11eab7c2108a54"
+dependencies = [
+ "bytes 1.5.0",
+ "chrono",
+ "csv",
+ "derivative",
+ "futures 0.3.29",
+ "itertools 0.11.0",
+ "reqwest",
+ "rgb",
+ "serde",
+ "serde_derive",
+ "sha2 0.10.8",
+ "thiserror",
+ "zip",
+]
+
+[[package]]
 name = "h2"
 version = "0.1.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1877,7 +1898,7 @@ dependencies = [
  "fasthash",
  "futures 0.3.29",
  "gtfs-rt",
- "gtfs-structures",
+ "gtfs-structures 0.39.0",
  "hyper 1.0.1",
  "openssl",
  "prost",

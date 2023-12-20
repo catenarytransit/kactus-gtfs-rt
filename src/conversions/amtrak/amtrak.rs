@@ -14,9 +14,12 @@ use gtfs_structures::Gtfs;
 async fn main() {
     let redisclient = RedisClient::open("redis://127.0.0.1:6379/").unwrap();
     let mut con = redisclient.get_connection().unwrap();
+
+    println!("Downloading GTFS static");
     let gtfs = Gtfs::from_url_async("https://content.amtrak.com/content/gtfs/GTFS.zip")
         .await
         .unwrap();
+    println!("Done downloading GTFS static");
 
         let client = reqwest::ClientBuilder::new()
         .deflate(true)
