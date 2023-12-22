@@ -292,7 +292,7 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
         println!("{:#?}", proto);
         return HttpResponse::InternalServerError().body(format!("{:#?}", proto));
     }
-    match qs.get("route") {
+    let proto = match qs.get("route") {
         Some(route) => {
             let mut filtered_message = FeedMessage::default();
             filtered_message.header.gtfs_realtime_version = "2.0".to_string();
@@ -323,27 +323,19 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
                     filtered_entity.alert.unwrap().informed_entity = informed_entities;
                 }
             }
-            if usejson {
-                let protojson = serde_json::to_string(&filtered_message).unwrap();
-                HttpResponse::Ok()
-                    .insert_header(("Content-Type", "application/json"))
-                    .body(protojson)
-            } else {
-                let protojson = format!("{:#?}", filtered_message.clone());
-                HttpResponse::Ok().body(protojson)
-            }
+            filtered_message
         }
-        None => {
-            if usejson {
-                let protojson = serde_json::to_string(&proto.unwrap()).unwrap();
-                HttpResponse::Ok()
-                    .insert_header(("Content-Type", "application/json"))
-                    .body(protojson)
-            } else {
-                let protojson = format!("{:#?}", proto.unwrap());
-                HttpResponse::Ok().body(protojson)
-            }
-        }
+        None => proto.unwrap(),
+    };
+    
+    if usejson {
+        let protojson = serde_json::to_string(&proto).unwrap();
+        HttpResponse::Ok()
+            .insert_header(("Content-Type", "application/json"))
+            .body(protojson)
+    } else {
+        let protojson = format!("{:#?}", proto);
+        HttpResponse::Ok().body(protojson)
     }
 }
 
