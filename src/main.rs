@@ -300,15 +300,12 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
 
             for entity in proto.unwrap().entity {
                 let mut filtered_entity = FeedEntity::default();
-                if entity.trip_update.is_some() {
-                    if entity.trip_update.as_ref().unwrap().trip.route_id() == route {
-                        filtered_entity.trip_update = entity.trip_update.clone();
-                    }
+                filtered_entity.id = entity.id.clone();
+                if entity.trip_update.is_some() && entity.trip_update.as_ref().unwrap().trip.route_id() == route {
+                    filtered_entity.trip_update = entity.trip_update.clone();
                 }
-                if entity.vehicle.is_some() && entity.vehicle.as_ref().unwrap().trip.is_some() {
-                    if entity.vehicle.as_ref().unwrap().trip.as_ref().unwrap().route_id() == route {
-                        filtered_entity.vehicle = entity.vehicle.clone();
-                    }
+                if entity.vehicle.is_some() && entity.vehicle.as_ref().unwrap().trip.is_some() && entity.vehicle.as_ref().unwrap().trip.as_ref().unwrap().route_id() == route {
+                    filtered_entity.vehicle = entity.vehicle.clone();
                 }
                 if entity.alert.is_some() {
                     let mut informed_entities: Vec<EntitySelector> = Vec::new();
@@ -323,7 +320,9 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
                     filtered_entity.alert.as_mut().unwrap().informed_entity = informed_entities;
                 }
                 println!("{:?}", filtered_entity);
-                filtered_message.entity.push(filtered_entity);
+                if filtered_entity.trip_update.is_some() || filtered_entity.vehicle.is_some() || filtered_entity.alert.is_some() || filtered_entity.shape.is_some() {
+                    filtered_message.entity.push(filtered_entity);
+                }
             }
             println!("{:?}", filtered_message);
             filtered_message
