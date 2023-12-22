@@ -239,7 +239,7 @@ async fn gtfsrttimes(_req: HttpRequest) -> impl Responder {
     let json = serde_json::to_string(&vecoftimes).unwrap();
 
     HttpResponse::Ok()
-        .insert_header(("Content-Type", "application/json"))
+        .insert_header(("Content-Type", "application/x-protobuf"))
         .body(format!("{}\n", json))
 }
 
