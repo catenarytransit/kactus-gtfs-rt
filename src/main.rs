@@ -3,8 +3,8 @@ use actix_web::{
     middleware::DefaultHeaders, middleware, web, App, HttpRequest, HttpResponse, HttpServer, Responder,
 };
 use actix_web_actors::ws;
-use futures::FutureExt;
-use rand::{distributions::Alphanumeric, Rng};
+use gtfs_rt::{FeedMessage, FeedEntity, EntitySelector};
+use rand::Rng;
 use redis::Commands;
 extern crate qstring;
 
@@ -292,14 +292,58 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
         println!("{:#?}", proto);
         return HttpResponse::InternalServerError().body(format!("{:#?}", proto));
     }
-    if usejson {
-        let protojson = serde_json::to_string(&proto.unwrap()).unwrap();
-        HttpResponse::Ok()
-            .insert_header(("Content-Type", "application/json"))
-            .body(protojson)
-    } else {
-        let protojson = format!("{:#?}", proto.unwrap());
-        HttpResponse::Ok().body(protojson)
+    match qs.get("route") {
+        Some(route) => {
+            let mut filtered_message = FeedMessage::default();
+            filtered_message.header.gtfs_realtime_version = "2.0".to_string();
+            filtered_message.header.incrementality = Some(0);
+
+            for entity in proto.unwrap().entity {
+                let mut filtered_entity = FeedEntity::default();
+                if entity.trip_update.is_some() {
+                    if entity.trip_update.as_ref().unwrap().trip.route_id() == route {
+                        filtered_entity.trip_update = entity.trip_update.clone();
+                    }
+                }
+                if entity.vehicle.is_some() && entity.vehicle.as_ref().unwrap().trip.is_some() {
+                    if entity.vehicle.as_ref().unwrap().trip.as_ref().unwrap().route_id() == route {
+                        filtered_entity.vehicle = entity.vehicle.clone();
+                    }
+                }
+                if entity.alert.is_some() {
+                    let mut informed_entities: Vec<EntitySelector> = Vec::new();
+                    for informed_entity in &entity.alert.as_ref().unwrap().informed_entity {
+                        if informed_entity.route_id() == route {
+                            informed_entities.push(informed_entity.clone());
+                        }
+                    }
+                    if filtered_entity.alert.is_none() {
+                        filtered_entity.alert = entity.alert.clone();
+                    }
+                    filtered_entity.alert.unwrap().informed_entity = informed_entities;
+                }
+            }
+            if usejson {
+                let protojson = serde_json::to_string(&filtered_message).unwrap();
+                HttpResponse::Ok()
+                    .insert_header(("Content-Type", "application/json"))
+                    .body(protojson)
+            } else {
+                let protojson = format!("{:#?}", filtered_message.clone());
+                HttpResponse::Ok().body(protojson)
+            }
+        }
+        None => {
+            if usejson {
+                let protojson = serde_json::to_string(&proto.unwrap()).unwrap();
+                HttpResponse::Ok()
+                    .insert_header(("Content-Type", "application/json"))
+                    .body(protojson)
+            } else {
+                let protojson = format!("{:#?}", proto.unwrap());
+                HttpResponse::Ok().body(protojson)
+            }
+        }
     }
 }
 
