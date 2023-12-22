@@ -323,6 +323,7 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
                     filtered_entity.alert.as_mut().unwrap().informed_entity = informed_entities;
                 }
                 println!("{:?}", filtered_entity);
+                filtered_message.entity.push(filtered_entity);
             }
             println!("{:?}", filtered_message);
             filtered_message
