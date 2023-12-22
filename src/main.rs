@@ -292,6 +292,9 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
         println!("{:#?}", proto);
         return HttpResponse::InternalServerError().body(format!("{:#?}", proto));
     }
+
+    let json_resp = HttpResponse::Ok().insert_header(("Content-Type", "text/plain"));
+    
     match qs.get("route") {
         Some(route) => {
             let mut filtered_message = FeedMessage::default();
@@ -325,12 +328,10 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
             }
             if usejson {
                 let protojson = serde_json::to_string(&filtered_message).unwrap();
-                HttpResponse::Ok()
-                    .insert_header(("Content-Type", "application/json"))
-                    .body(protojson)
+                json_resp.body(protojson)
             } else {
                 let protojson = format!("{:#?}", filtered_message.clone());
-                HttpResponse::Ok().body(protojson)
+                json_resp.body(protojson)
             }
         }
         None => {
@@ -341,7 +342,7 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
                     .body(protojson)
             } else {
                 let protojson = format!("{:#?}", proto.unwrap());
-                HttpResponse::Ok().body(protojson)
+                json_resp.body(protojson)
             }
         }
     }
