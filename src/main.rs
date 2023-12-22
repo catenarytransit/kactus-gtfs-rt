@@ -174,6 +174,7 @@ async fn gtfsrt(req: HttpRequest) -> impl Responder {
         .body(data)
 }
 
+//NOT PROTOBUF this is the list of available agencies
 async fn gtfsrttimes(_req: HttpRequest) -> impl Responder {
     let redisclient = redis::Client::open("redis://127.0.0.1:6379/").unwrap();
     let mut con = redisclient.get_connection().unwrap();
