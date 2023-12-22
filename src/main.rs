@@ -320,7 +320,7 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
                     if filtered_entity.alert.is_none() {
                         filtered_entity.alert = entity.alert.clone();
                     }
-                    filtered_entity.alert.unwrap().informed_entity = informed_entities;
+                    filtered_entity.alert.as_mut().unwrap().informed_entity = informed_entities;
                 }
             }
             filtered_message
