@@ -298,7 +298,7 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
             filtered_message.header = FeedHeader {
                 gtfs_realtime_version: "2.0".to_string(),
                 incrementality: Some(0),
-                timestamp: proto.unwrap().header.timestamp.clone(),
+                timestamp: proto.as_ref().unwrap().header.timestamp.clone(),
             };
 
             for entity in proto.unwrap().entity {
