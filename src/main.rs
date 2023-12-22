@@ -3,7 +3,7 @@ use actix_web::{
     middleware::DefaultHeaders, middleware, web, App, HttpRequest, HttpResponse, HttpServer, Responder,
 };
 use actix_web_actors::ws;
-use gtfs_rt::{FeedMessage, FeedEntity, EntitySelector};
+use gtfs_rt::{FeedMessage, FeedEntity, EntitySelector, FeedHeader};
 use rand::Rng;
 use redis::Commands;
 extern crate qstring;
@@ -11,7 +11,7 @@ extern crate qstring;
 use kactus::parse_protobuf_message;
 use qstring::QString;
 use serde::Serialize;
-use std::time::Instant;
+use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
 pub struct GtfsWs {
     feed: String,
@@ -295,8 +295,11 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
     let proto = match qs.get("route") {
         Some(route) => {
             let mut filtered_message = FeedMessage::default();
-            filtered_message.header.gtfs_realtime_version = "2.0".to_string();
-            filtered_message.header.incrementality = Some(0);
+            filtered_message.header = FeedHeader {
+                gtfs_realtime_version: "2.0".to_string(),
+                incrementality: Some(0),
+                timestamp: Some(SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs()),
+            };
 
             for entity in proto.unwrap().entity {
                 let mut filtered_entity = FeedEntity::default();
