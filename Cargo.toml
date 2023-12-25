@@ -13,7 +13,7 @@ non_ascii_idents = "deny"
 [dependencies]
 actix = "0.13.1"
 actix_block_ai_crawling = "0.2.8"
-actix-web = "4.4.0"
+actix-web = "4.4.1"
 actix-web-actors = "4.2.0"
 ahash = "0.8.6"
 amtrak-gtfs-rt = "0.1.11"
