@@ -12,12 +12,6 @@ jobs:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - uses: actions/checkout@v3
-      - name: Install Dependencies
-        run: sudo apt install protobuf-compiler redis
-      - name: Build
-        run: cargo build --verbose
-      - name: Test
-        run: cargo test --verbose -- --nocapture
 
       - name: Setup Cloudflared
         run: |
