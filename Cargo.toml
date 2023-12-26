@@ -48,7 +48,6 @@ tokio = { version = "1.33", features = ["full"] }
 gtfs-structures = "0.39.0"
 tokio-zookeeper = "0.2.1"
 
-
 [lib]
 path = "src/lib.rs"
 
