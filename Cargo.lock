@@ -1872,6 +1872,7 @@ dependencies = [
  "gtfs-rt",
  "gtfs-structures",
  "hyper 1.1.0",
+ "lock_api 0.4.11",
  "openssl",
  "prost",
  "protobuf",
