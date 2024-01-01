@@ -10,6 +10,27 @@ use kactus::aspen::send_to_aspen;
 
 use gtfs_structures::Gtfs;
 
+pub fn filter_capital_corridor(input: gtfs_rt::FeedMessage) -> gtfs_rt::FeedMessage {
+    let cc_route_id = "84";
+
+    gtfs_rt::FeedMessage {
+        entity: input.entity.into_iter().filter(|item| {
+            if item.vehicle.is_some() {
+                if item.vehicle.as_ref().unwrap().trip.is_some() {
+                    if item.vehicle.as_ref().unwrap().trip.as_ref().unwrap().route_id.is_some() {
+                        if item.vehicle.as_ref().unwrap().trip.as_ref().unwrap().route_id.as_ref().unwrap().as_str() == cc_route_id {
+                            return false
+                        }
+                    }
+                }
+            }
+
+            true
+        }).collect::<Vec<gtfs_rt::FeedEntity>>(),
+        header: input.header
+    }
+}
+
 #[tokio::main]
 async fn main() {
     let redisclient = RedisClient::open("redis://127.0.0.1:6379/").unwrap();
@@ -31,8 +52,8 @@ async fn main() {
             .await
             .unwrap();
 
-        let vehicle_data = amtrak_gtfs_rt.vehicle_positions.encode_to_vec();
-        let trip_data = amtrak_gtfs_rt.trip_updates.encode_to_vec();
+        let vehicle_data = filter_capital_corridor(amtrak_gtfs_rt.vehicle_positions).encode_to_vec();
+        let trip_data = filter_capital_corridor(amtrak_gtfs_rt.trip_updates).encode_to_vec();
 
         insert_gtfs_rt_bytes(
             &mut con,
