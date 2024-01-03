@@ -2,7 +2,7 @@
 name = "kactus"
 version = "0.1.0"
 edition = "2021"
-default = [ "nightly" ]
+default = [ "stable" ]
 
 [lints.rust]
 unused_must_use = "deny"
