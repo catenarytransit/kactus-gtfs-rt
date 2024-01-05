@@ -2,7 +2,7 @@
 name = "kactus"
 version = "0.1.0"
 edition = "2021"
-default = [ "nightly" ]
+default = [ "stable" ]
 
 [lints.rust]
 unused_must_use = "deny"
@@ -15,11 +15,11 @@ actix = "0.13.1"
 actix_block_ai_crawling = "0.2.8"
 actix-web = "4.4.1"
 actix-web-actors = "4.2.0"
-ahash = "0.8.6"
-amtrak-gtfs-rt = "0.1.11"
+ahash = "0.8.7"
+amtrak-gtfs-rt = "0.1.15"
 arguments = "0.7"
 chrono = "0.4.31"
-chrono-tz = "0.8.4"
+chrono-tz = "0.8.5"
 color-eyre = "0.6.2"
 csv = "1.3"
 etcd = "0.9.0"
@@ -28,6 +28,7 @@ farmhash = "1.1"
 futures = "0.3.30"
 gtfs-rt = "0.4"
 hyper = { version = "1.1.0", features = ["full"] }
+lock_api = "0.4.2"
 openssl = "0.10.62"
 prost = "0.11.9"
 protobuf = { version = "3.2.0", features = ["with-bytes"] }
@@ -38,14 +39,14 @@ rayon = "1.8.0"
 redis = { version = "0.24", features = ["streams"] }
 regex = "1.10.2"
 reqwest = {version = "0.11", features = ["gzip","brotli","rustls-tls","deflate","cookies","mime_guess"]}
-serde = "1.0.193"
+serde = "1.0.194"
 serde_derive = "1.0.192"
-serde_json = "1.0.108"
+serde_json = "1.0.111"
 snailquote = "0.3.1"
 systemctl = "0.3.1"
 termion = "2.0.3"
 tokio = { version = "1.33", features = ["full"] }
-gtfs-structures = "0.39.0"
+gtfs-structures = "0.39.1"
 tokio-zookeeper = "0.2.1"
 
 [lib]

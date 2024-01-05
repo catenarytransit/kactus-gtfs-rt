@@ -3,7 +3,7 @@
 Kactus (Kyler's Automated Cache for Transport Unification & Synchronisation) is a cache server written in Rust and using Redis. It is open source under the GPL 3.0 license. Please submit issues &
 pull requests!
 
-### Hosted by Kyler
+### Hosted by Catenary Transit Initatives Data Centres
 
 Use Kactus hosted by Catenary's servers! 
 `https://kactus.catenarymaps.org/gtfsrt/?feed=[onestopid]&category=[category]`
