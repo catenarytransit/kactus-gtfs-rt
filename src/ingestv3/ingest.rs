@@ -28,6 +28,9 @@ async fn main() {
         .await
         .unwrap();
 
+    //upon updating the feed list, this should also automatically propagate to all nodes.
+    //example 1: if a password is added or changed, that needs to be sent to the latest users
+    //example 2: If a new feed is found, the leader must assign this feed to a worker node
     let feed_list: Arc<Mutex<Vec<AgencyInfo>>> = Arc::new(Mutex::new(vec![]));
 
     //wrap zk into an arc to be accessed across several threads
@@ -77,3 +80,6 @@ async fn main() {
 
     //listen handler changes global state
 }
+
+//additional requirement of the software system:
+//retain kactus.catenarymaps.org full functionality
