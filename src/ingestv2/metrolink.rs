@@ -34,7 +34,8 @@ async fn main() {
         .deflate(true)
         .gzip(true)
         .brotli(true)
-        .build().unwrap();
+        .build()
+        .unwrap();
     let redisclient = redis::Client::open("redis://127.0.0.1:6379/").unwrap();
     let _con = redisclient.get_connection().unwrap();
 

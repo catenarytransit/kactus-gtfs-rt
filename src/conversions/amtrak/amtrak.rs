@@ -14,20 +14,39 @@ pub fn filter_capital_corridor(input: gtfs_rt::FeedMessage) -> gtfs_rt::FeedMess
     let cc_route_id = "84";
 
     gtfs_rt::FeedMessage {
-        entity: input.entity.into_iter().filter(|item| {
-            if item.vehicle.is_some() {
-                if item.vehicle.as_ref().unwrap().trip.is_some() {
-                    if item.vehicle.as_ref().unwrap().trip.as_ref().unwrap().route_id.is_some() {
-                        if item.vehicle.as_ref().unwrap().trip.as_ref().unwrap().route_id.as_ref().unwrap().as_str() == cc_route_id {
-                            return false
+        entity: input
+            .entity
+            .into_iter()
+            .filter(|item| {
+                if item.vehicle.is_some() {
+                    let vehicle = item.vehicle.as_ref().unwrap();
+                    if vehicle.trip.is_some() {
+                        let trip = vehicle.trip.as_ref().unwrap();
+                        if trip.route_id.is_some() {
+                            if trip.route_id.as_ref().unwrap().as_str() == cc_route_id {
+                                return false;
+                            }
                         }
                     }
                 }
-            }
 
-            true
-        }).collect::<Vec<gtfs_rt::FeedEntity>>(),
-        header: input.header
+                if item.trip_update.is_some() {
+                    let trip_update = item.trip_update.as_ref().unwrap();
+                    let trip = &trip_update.trip;
+
+                    if trip.route_id.is_some() {
+                        let route_id = trip.route_id.as_ref().unwrap();
+
+                        if route_id == cc_route_id {
+                            return false;
+                        }
+                    }
+                }
+
+                true
+            })
+            .collect::<Vec<gtfs_rt::FeedEntity>>(),
+        header: input.header,
     }
 }
 
@@ -42,17 +61,19 @@ async fn main() {
         .unwrap();
     println!("Done downloading GTFS static");
 
-        let client = reqwest::ClientBuilder::new()
+    let client = reqwest::ClientBuilder::new()
         .deflate(true)
         .gzip(true)
         .brotli(true)
-        .build().unwrap();
+        .build()
+        .unwrap();
     loop {
         let amtrak_gtfs_rt = amtrak_gtfs_rt::fetch_amtrak_gtfs_rt(&gtfs, &client)
             .await
             .unwrap();
 
-        let vehicle_data = filter_capital_corridor(amtrak_gtfs_rt.vehicle_positions).encode_to_vec();
+        let vehicle_data =
+            filter_capital_corridor(amtrak_gtfs_rt.vehicle_positions).encode_to_vec();
         let trip_data = filter_capital_corridor(amtrak_gtfs_rt.trip_updates).encode_to_vec();
 
         insert_gtfs_rt_bytes(
