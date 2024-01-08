@@ -9,46 +9,7 @@ use kactus::insert::insert_gtfs_rt_bytes;
 use kactus::aspen::send_to_aspen;
 
 use gtfs_structures::Gtfs;
-
-pub fn filter_capital_corridor(input: gtfs_rt::FeedMessage) -> gtfs_rt::FeedMessage {
-    let cc_route_id = "84";
-
-    gtfs_rt::FeedMessage {
-        entity: input
-            .entity
-            .into_iter()
-            .filter(|item| {
-                if item.vehicle.is_some() {
-                    let vehicle = item.vehicle.as_ref().unwrap();
-                    if vehicle.trip.is_some() {
-                        let trip = vehicle.trip.as_ref().unwrap();
-                        if trip.route_id.is_some() {
-                            if trip.route_id.as_ref().unwrap().as_str() == cc_route_id {
-                                return false;
-                            }
-                        }
-                    }
-                }
-
-                if item.trip_update.is_some() {
-                    let trip_update = item.trip_update.as_ref().unwrap();
-                    let trip = &trip_update.trip;
-
-                    if trip.route_id.is_some() {
-                        let route_id = trip.route_id.as_ref().unwrap();
-
-                        if route_id == cc_route_id {
-                            return false;
-                        }
-                    }
-                }
-
-                true
-            })
-            .collect::<Vec<gtfs_rt::FeedEntity>>(),
-        header: input.header,
-    }
-}
+use amtrak_gtfs_rt::filter_capital_corridor;
 
 #[tokio::main]
 async fn main() {
