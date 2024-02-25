@@ -40,27 +40,27 @@ async fn main() {
 
     if check_pool_made.is_none() {
         let makeworkerpool = zk
-        .create(
-            "/kactusworkers",
-            &b"Hello world"[..],
-            Acl::open_unsafe(),
-            CreateMode::Persistent,
-        )
-        .await
-        .unwrap();
+            .create(
+                "/kactusworkers",
+                &b"Hello world"[..],
+                Acl::open_unsafe(),
+                CreateMode::Persistent,
+            )
+            .await
+            .unwrap();
 
         let check_pool_made = zk.watch().exists("/kactusworkers").await.unwrap().unwrap();
     }
 
     let make_worker = zk
-    .create(
-        format!("/kactusworkers/{worker_uid}").as_str(),
-        &b"Hello world"[..],
-        Acl::open_unsafe(),
-        CreateMode::Ephemeral,
-    )
-    .await
-    .unwrap();
+        .create(
+            format!("/kactusworkers/{worker_uid}").as_str(),
+            &b"Hello world"[..],
+            Acl::open_unsafe(),
+            CreateMode::Ephemeral,
+        )
+        .await
+        .unwrap();
 
     //seperate leader thread
     tokio::spawn({

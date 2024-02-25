@@ -9,27 +9,7 @@ use kactus::insert::insert_gtfs_rt_bytes;
 use kactus::aspen::send_to_aspen;
 
 use gtfs_structures::Gtfs;
-
-pub fn filter_capital_corridor(input: gtfs_rt::FeedMessage) -> gtfs_rt::FeedMessage {
-    let cc_route_id = "84";
-
-    gtfs_rt::FeedMessage {
-        entity: input.entity.into_iter().filter(|item| {
-            if item.vehicle.is_some() {
-                if item.vehicle.as_ref().unwrap().trip.is_some() {
-                    if item.vehicle.as_ref().unwrap().trip.as_ref().unwrap().route_id.is_some() {
-                        if item.vehicle.as_ref().unwrap().trip.as_ref().unwrap().route_id.as_ref().unwrap().as_str() == cc_route_id {
-                            return false
-                        }
-                    }
-                }
-            }
-
-            true
-        }).collect::<Vec<gtfs_rt::FeedEntity>>(),
-        header: input.header
-    }
-}
+use amtrak_gtfs_rt::filter_capital_corridor;
 
 #[tokio::main]
 async fn main() {
@@ -42,17 +22,19 @@ async fn main() {
         .unwrap();
     println!("Done downloading GTFS static");
 
-        let client = reqwest::ClientBuilder::new()
+    let client = reqwest::ClientBuilder::new()
         .deflate(true)
         .gzip(true)
         .brotli(true)
-        .build().unwrap();
+        .build()
+        .unwrap();
     loop {
         let amtrak_gtfs_rt = amtrak_gtfs_rt::fetch_amtrak_gtfs_rt(&gtfs, &client)
             .await
             .unwrap();
 
-        let vehicle_data = filter_capital_corridor(amtrak_gtfs_rt.vehicle_positions).encode_to_vec();
+        let vehicle_data =
+            filter_capital_corridor(amtrak_gtfs_rt.vehicle_positions).encode_to_vec();
         let trip_data = filter_capital_corridor(amtrak_gtfs_rt.trip_updates).encode_to_vec();
 
         insert_gtfs_rt_bytes(

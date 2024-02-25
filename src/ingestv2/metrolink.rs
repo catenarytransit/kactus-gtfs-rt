@@ -34,7 +34,8 @@ async fn main() {
         .deflate(true)
         .gzip(true)
         .brotli(true)
-        .build().unwrap();
+        .build()
+        .unwrap();
     let redisclient = redis::Client::open("redis://127.0.0.1:6379/").unwrap();
     let _con = redisclient.get_connection().unwrap();
 
@@ -381,13 +382,17 @@ async fn runcategory(
             //if 429 response, freeze the program for 30 seconds
 
             if response.status().is_client_error() {
-                println!(
-                    "{}Recieved 429, freezing{}",
-                    color::Fg(color::Red),
-                    style::Reset
-                );
+                println!("{}Response status: {}{}", color::Fg(color::Red), response.status().as_str(), style::Reset);
 
-                std::thread::sleep(Duration::from_millis(30_000));
+                if response.status() == reqwest::TOO_MANY_REQUESTS {
+                    println!(
+                        "{}Recieved 429, freezing{}",
+                        color::Fg(color::Red),
+                        style::Reset
+                    );
+
+                    std::thread::sleep(Duration::from_millis(30_000));
+                }
             }
 
             if response.status().is_success() {

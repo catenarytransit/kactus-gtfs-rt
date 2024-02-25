@@ -94,10 +94,11 @@ async fn main() -> color_eyre::eyre::Result<()> {
 
     loop {
         let client = reqwest::ClientBuilder::new()
-        .deflate(true)
-        .gzip(true)
-        .brotli(true)
-        .build().unwrap();
+            .deflate(true)
+            .gzip(true)
+            .brotli(true)
+            .build()
+            .unwrap();
 
         lastloop = Instant::now();
 

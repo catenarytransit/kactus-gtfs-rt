@@ -1,9 +1,10 @@
 use actix::{Actor, StreamHandler};
 use actix_web::{
-    middleware::DefaultHeaders, middleware, web, App, HttpRequest, HttpResponse, HttpServer, Responder,
+    middleware, middleware::DefaultHeaders, web, App, HttpRequest, HttpResponse, HttpServer,
+    Responder,
 };
 use actix_web_actors::ws;
-use gtfs_rt::{FeedMessage, FeedEntity, EntitySelector, FeedHeader};
+use gtfs_rt::{EntitySelector, FeedEntity, FeedHeader, FeedMessage};
 use rand::Rng;
 use redis::Commands;
 extern crate qstring;
@@ -304,10 +305,23 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
             for entity in proto.unwrap().entity {
                 let mut filtered_entity = FeedEntity::default();
                 filtered_entity.id = entity.id.clone();
-                if entity.trip_update.is_some() && entity.trip_update.as_ref().unwrap().trip.route_id() == route {
+                if entity.trip_update.is_some()
+                    && entity.trip_update.as_ref().unwrap().trip.route_id() == route
+                {
                     filtered_entity.trip_update = entity.trip_update.clone();
                 }
-                if entity.vehicle.is_some() && entity.vehicle.as_ref().unwrap().trip.is_some() && entity.vehicle.as_ref().unwrap().trip.as_ref().unwrap().route_id() == route {
+                if entity.vehicle.is_some()
+                    && entity.vehicle.as_ref().unwrap().trip.is_some()
+                    && entity
+                        .vehicle
+                        .as_ref()
+                        .unwrap()
+                        .trip
+                        .as_ref()
+                        .unwrap()
+                        .route_id()
+                        == route
+                {
                     filtered_entity.vehicle = entity.vehicle.clone();
                 }
                 if entity.alert.is_some() {
@@ -323,7 +337,11 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
                     filtered_entity.alert.as_mut().unwrap().informed_entity = informed_entities;
                 }
                 println!("{:?}", filtered_entity);
-                if filtered_entity.trip_update.is_some() || filtered_entity.vehicle.is_some() || filtered_entity.alert.is_some() || filtered_entity.shape.is_some() {
+                if filtered_entity.trip_update.is_some()
+                    || filtered_entity.vehicle.is_some()
+                    || filtered_entity.alert.is_some()
+                    || filtered_entity.shape.is_some()
+                {
                     filtered_message.entity.push(filtered_entity);
                 }
             }
@@ -332,7 +350,7 @@ async fn gtfsrttojson(req: HttpRequest) -> impl Responder {
         }
         None => proto.unwrap(),
     };
-    
+
     if usejson {
         let protojson = serde_json::to_string(&proto).unwrap();
         HttpResponse::Ok()
