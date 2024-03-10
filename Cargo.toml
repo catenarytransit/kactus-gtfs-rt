@@ -73,10 +73,6 @@ name = "ingestdoublemap"
 path = "src/conversions/doublemap/main.rs"
 
 [[bin]]
-name = "meerkat-fallback"
-path = "src/meerkat-manager/meerkat-fallback.rs"
-
-[[bin]]
 name = "ingestamtrak"
 path = "src/conversions/amtrak/amtrak.rs"
 
