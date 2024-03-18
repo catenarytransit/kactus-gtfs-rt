@@ -1,5 +1,7 @@
 # Kactus, a GTFS-rt cache
 
+**This repository has reached end of life. Further development on GTFS-rt ingestion will occur in https://github.com/catenarytransit/catenary-backend**
+
 Kactus (Kyler's Automated Cache for Transport Unification & Synchronisation) is a cache server written in Rust and using Redis. It is open source under the GPL 3.0 license. Please submit issues &
 pull requests!
 
