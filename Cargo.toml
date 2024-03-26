@@ -37,7 +37,7 @@ qstring = "0.7"
 rand = "0.8"
 rayon = "1.8.0"
 redis = { version = "0.24", features = ["streams"] }
-regex = "1.10.2"
+regex = "1.10.4"
 reqwest = {version = "0.11", features = ["gzip","brotli","rustls-tls","deflate","cookies","mime_guess"]}
 serde = "1.0.194"
 serde_derive = "1.0.192"
