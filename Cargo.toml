@@ -44,7 +44,7 @@ serde_derive = "1.0.192"
 serde_json = "1.0.111"
 snailquote = "0.3.1"
 systemctl = "0.3.1"
-termion = "2.0.3"
+termion = "4.0.0"
 tokio = { version = "1.33", features = ["full"] }
 gtfs-structures = "0.39.1"
 tokio-zookeeper = "0.2.1"
