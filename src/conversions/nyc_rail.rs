@@ -309,8 +309,6 @@ async fn get_mta_trips(client: &reqwest::Client, url: &str, api_key: &str) -> gt
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     color_eyre::install()?;
-    // curl https://transloc-api-1-2.p.rapidapi.com/vehicles.json?agencies=1039
-    //-H "X-Mashape-Key: b0ebd9e8a5msh5aca234d74ce282p1737bbjsnddd18d7b9365"
 
     let redisclient = RedisClient::open("redis://127.0.0.1:6379/").unwrap();
     let mut con = redisclient.get_connection().unwrap();
