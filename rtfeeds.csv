@@ -5,7 +5,6 @@ f-9qhc-beaumont~ca~us~rt~alerts,,,https://api.goswift.ly/real-time/beaumont/gtfs
 f-9xj5s-viamobilityservices~rt~alerts,,,https://api.goswift.ly/real-time/via/gtfs-rt-alerts,true,true
 f-abqride~rt~alerts,,,https://api.goswift.ly/real-time/abq-ride/gtfs-rt-alerts,true,true
 f-ata~bus~ks~rt~alerts,,,https://api.goswift.ly/real-time/flint-hills-ata/gtfs-rt-alerts/,true,true
-f-avalon~ca~rt~alerts,,,https://api.goswift.ly/real-time/avalon/gtfs-rt-alerts,true,true
 f-baytowntrolley~fl~rt~alerts,,,https://api.goswift.ly/real-time/bay-town-trolley/gtfs-rt-alerts,true,true
 f-brightline~fl~us~rt~alerts,,,https://api.goswift.ly/real-time/brightline-fl-us/gtfs-rt-alerts,true,true
 f-capitalmetro~rt~alerts,,,https://api.goswift.ly/real-time/cap-metro/gtfs-rt-alerts,true,true
@@ -317,7 +316,6 @@ f-abqride~rt,https://api.goswift.ly/real-time/abq-ride/gtfs-rt-vehicle-positions
 f-advancetransit~rt,https://api.goswift.ly/real-time/advance-transit/gtfs-rt-vehicle-positions,https://api.goswift.ly/real-time/advance-transit/gtfs-rt-trip-updates,,true,true
 f-alsa~es~rt,https://api.goswift.ly/real-time/es-alsa/gtfs-rt-vehicle-positions,https://api.goswift.ly/real-time/es-alsa/gtfs-rt-trip-updates,,true,true
 f-ata~bus~ks~rt,https://api.goswift.ly/real-time/flint-hills-ata/gtfs-rt-vehicle-positions/,https://api.goswift.ly/real-time/flint-hills-ata/gtfs-rt-trip-updates/,,true,true
-f-avalon~ca~rt,https://api.goswift.ly/real-time/avalon/gtfs-rt-vehicle-positions,https://api.goswift.ly/real-time/avalon/gtfs-rt-trip-updates,,true,true
 f-banning~pass~transit~rt,https://api.goswift.ly/real-time/banning/gtfs-rt-vehicle-positions,https://api.goswift.ly/real-time/banning/gtfs-rt-trip-updates,,true,true
 f-baytowntrolley~fl~rt,https://api.goswift.ly/real-time/bay-town-trolley/gtfs-rt-vehicle-positions,https://api.goswift.ly/real-time/bay-town-trolley/gtfs-rt-trip-updates,,true,true
 f-brightline~fl~us~rt,https://api.goswift.ly/real-time/brightline-fl-us/gtfs-rt-vehicle-positions,https://api.goswift.ly/real-time/brightline-fl-us/gtfs-rt-trip-updates,,true,true
